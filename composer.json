@@ -32,8 +32,11 @@
     },
     "autoload":{
         "psr-0":{
-            "ConsoleTools\\":"src/"
-        }
+            "ConsoleTools":"src/"
+        },
+        "classmap": [
+            "./Module.php"
+        ]
     },
     "bin": ["zf.php"]
 }
