@@ -27,7 +27,7 @@ $> cp vendor/neeage/console-tools/zf.php zf.php
 
 ##Usage
 
-Entry in console:
+Execute on console:
 ```
 $> php zf.php
 ```
