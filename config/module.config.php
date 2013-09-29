@@ -5,6 +5,7 @@ return array(
         'invokables' => array(
             'ConsoleTools\Controller\Migration' => 'ConsoleTools\Controller\MigrationController',
             'ConsoleTools\Controller\Schema' => 'ConsoleTools\Controller\SchemaController',
+            'ConsoleTools\Controller\Fixture' => 'ConsoleTools\Controller\FixtureController',
         ),
     ),
     'console' => array(
@@ -43,6 +44,15 @@ return array(
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'last'
+                        )
+                    )
+                ),
+                'fixture-apply' => array(
+                    'options' => array(
+                        'route'    => 'fixture apply [<name>]',
+                        'defaults' => array(
+                            'controller' => 'ConsoleTools\Controller\Fixture',
+                            'action'     => 'apply'
                         )
                     )
                 )
