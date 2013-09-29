@@ -25,6 +25,9 @@ class MigrationController extends AbstractActionController
      * @var string
      */
     const MIGRATION_FOLDER = '/config/migrations/';
+    
+    const UPGRADE_KEY = 'up';
+    const DOWNGRADE_KEY = 'down';
 
     /**
      * Create new migration file
@@ -46,8 +49,15 @@ class MigrationController extends AbstractActionController
         
         $migrationName = time() . '.php';
         
-        $migrationModel = new \ConsoleTools\Model\Migration();
-        $migrationContent = $migrationModel->generate();
+        $migrationContent = <<<EOD
+<?php
+        
+return array(
+    'up' => '',
+    'down' => ''
+);
+                
+EOD;
         
         file_put_contents($migrationPath . $migrationName, $migrationContent);
         
@@ -62,20 +72,62 @@ class MigrationController extends AbstractActionController
     public function upgradeAction()
     {
         $console = $this->getServiceLocator()->get('console');
-        $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
-        
-        
-        
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
+        }
+        
+        $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $model = new Migration($adapter);
+        $request = $this->getRequest();
+        $toMigration = $request->getParam('migration', 'all');
+        $files = array();
+        
+        $migrationFolderPath = getcwd() . self::MIGRATION_FOLDER;
+        $filesDirty = scandir($migrationFolderPath);
+        for ($i=0; $i<count($filesDirty); $i++) {
+            if (substr($filesDirty[$i], 0, 1) != '.') {
+                array_push($files, substr($filesDirty[$i], 0, -4));
+            }
+        }
+        
+        $migrations = $model->applied();
+        $files = array_diff($files, $migrations);
+        asort($files, SORT_NUMERIC);
+        
+        foreach ($files as $migration) {
+            $migrationPath = $migrationFolderPath .
+                DIRECTORY_SEPARATOR . $migration . '.php';
+            
+            $migrationArray = include $migrationPath;
+            $upgradeAction = self::UPGRADE_KEY;
+
+            try {
+                switch ($upgradeAction) {
+                    case self::DOWNGRADE_KEY:
+                        //downgrade action
+                        $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
+                        break;
+                    case self::UPGRADE_KEY:
+                    default:
+                        //upgrade action
+                        $model->upgrade($migration, $migrationArray);
+                        $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
+                        break;
+                }
+                continue;
+            } catch (\Exception $err) {
+                $console->writeLine('Commit failed of the migration: ' . $migration, Color::RED);
+                $console->writeLine($err->getMessage(), Color::RED);
+                return;
+            }
         }
     }
     
     /**
-     * Show current applied migration number
+     * Show last applied migration number
      * 
      */
-    public function currentAction()
+    public function lastAction()
     {
         $console = $this->getServiceLocator()->get('console');
         if (!$console instanceof Console) {
@@ -84,8 +136,8 @@ class MigrationController extends AbstractActionController
         
         $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $model = new Migration($adapter);
-        $currentMigration = $model->current();
+        $lastMigration = $model->last();
         
-        $console->writeLine('Current applied migration: ' . $currentMigration, Color::GREEN);
+        $console->writeLine('Last applied migration: ' . $lastMigration, Color::GREEN);
     }
 }

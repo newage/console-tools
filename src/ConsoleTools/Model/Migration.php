@@ -37,33 +37,14 @@ class Migration
      * 
      * @param \Zend\Db\Adapter\Adapter $adapter
      */
-    public function __construct(Adapter $adapter)
+    public function __construct($adapter = null)
     {
         $this->_adapter = $adapter;
         $this->createTable();
     }
     
     /**
-     * Generate migration class
-     * 
-     * @param string $className
-     * @return string
-     */
-    public function generate()
-    {
-        return <<<EOD
-<?php
-        
-return array(
-    'up' => '',
-    'down' => ''
-);
-                
-EOD;
-    }
-    
-    /**
-     * Create migration table
+     * Create a migration table
      * 
      * @return bool
      */
@@ -73,19 +54,37 @@ EOD;
             CREATE TABLE IF NOT EXISTS `".self::TABLE."`(
                 `migration` int NOT NULL
             ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-            INSERT INTO `".self::TABLE."` VALUES(0)
         ";
-        
-        return $this->_adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
+
+        $this->_adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
     }
     
     /**
-     * Get current migration
+     * Get a last migration
      * 
-     * @return int
+     * @return string
      */
-    public function current()
+    public function last()
     {
+        $sql = new Sql($this->_adapter);
+        $select = $sql->select();
+        $select->from(self::TABLE);
+        $select->columns(array('last' => new \Zend\Db\Sql\Expression('MAX(migration)')));
+        
+        $selectString = $sql->getSqlStringForSqlObject($select);
+        $results = $this->_adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+        
+        return $results->current()->last;
+    }
+    
+    /**
+     * Get applied a migrations name
+     * 
+     * @return array
+     */
+    public function applied()
+    {
+        $migrationFiles = array();
         $sql = new Sql($this->_adapter);
         $select = $sql->select();
         $select->from(self::TABLE);
@@ -93,6 +92,36 @@ EOD;
         $selectString = $sql->getSqlStringForSqlObject($select);
         $results = $this->_adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
-        return (int)$results->current()->migration;
+        if ($results->count() > 0) {
+            foreach ($results as $migration) {
+                $migrationFiles[] = $migration->migration;
+            }
+        }
+            
+        return $migrationFiles;
+    }
+    
+    /**
+     * Apply up on the migration
+     * And insert migration name to base
+     * @TODO need use transaction
+     * 
+     * @param string $migrationName
+     * @paran array $migrationArray
+     * @return bool
+     * @throw Exception
+     */
+    public function upgrade($migrationName, $migrationArray)
+    {
+        $query = $migrationArray['up'];
+        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+        
+        $query = 'INSERT `'.self::TABLE.'` VALUE("'.$migrationName.'")';
+        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+    }
+    
+    public function downgrade($migration)
+    {
+        
     }
 }

@@ -37,12 +37,12 @@ return array(
                         )
                     )
                 ),
-                'migration-current' => array(
+                'migration-last' => array(
                     'options' => array(
-                        'route'    => 'migration current',
+                        'route'    => 'migration last',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
-                            'action'     => 'current'
+                            'action'     => 'last'
                         )
                     )
                 )
