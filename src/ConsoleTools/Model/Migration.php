@@ -90,9 +90,9 @@ EOD;
         $select = $sql->select();
         $select->from(self::TABLE);
         
-        $statement = $sql->prepareStatementForSqlObject($select);
-        $results = $statement->execute();
+        $selectString = $sql->getSqlStringForSqlObject($select);
+        $results = $this->_adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
-        return $results->current()['migration'];
+        return (int)$results->current()->migration;
     }
 }
