@@ -76,42 +76,62 @@ EOD;
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
         
-        $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
-        $model = new Migration($adapter);
-        $request = $this->getRequest();
-        $toMigration = $request->getParam('migration', 'all');
-        $files = array();
-        
+        $adapter             = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $model               = new Migration($adapter);
+        $request             = $this->getRequest();
+        $toMigration         = $request->getParam('number', 'all');
+        $migrationsFromBase  = $model->applied();
         $migrationFolderPath = getcwd() . self::MIGRATION_FOLDER;
-        $filesDirty = scandir($migrationFolderPath);
-        for ($i=0; $i<count($filesDirty); $i++) {
-            if (substr($filesDirty[$i], 0, 1) != '.') {
-                array_push($files, substr($filesDirty[$i], 0, -4));
+        $files               = array();
+        
+        if ($toMigration == 'all') {
+            $filesDirty = scandir($migrationFolderPath);
+            for ($i=0; $i<count($filesDirty); $i++) {
+                if (substr($filesDirty[$i], 0, 1) != '.') {
+                    array_push($files, substr($filesDirty[$i], 0, -4));
+                }
             }
+            $filesFromDrive = array_diff($files, $migrationsFromBase);
+            asort($files, SORT_NUMERIC);
+        
+            $files = array_diff($filesFromDrive, $migrationsFromBase);
+            asort($files, SORT_NUMERIC);
+            $upgradeAction = self::UPGRADE_KEY;
+        } else if (in_array($toMigration, $migrationsFromBase)) {
+            $key = array_search($toMigration, $migrationsFromBase);
+            $files = array_slice($migrationsFromBase, $key);
+            rsort($files, SORT_NUMERIC);
+            $upgradeAction = self::DOWNGRADE_KEY;
+        } else {
+            $console->writeLine('Didn\'t apply the migration: ' . $toMigration, Color::RED);
+            return;
         }
         
-        $migrations = $model->applied();
-        $files = array_diff($files, $migrations);
-        asort($files, SORT_NUMERIC);
+        if (!count($files)) {
+            $console->writeLine('You have the last version of database', Color::GREEN);
+            return;
+        }
         
         foreach ($files as $migration) {
             $migrationPath = $migrationFolderPath .
                 DIRECTORY_SEPARATOR . $migration . '.php';
             
             $migrationArray = include $migrationPath;
-            $upgradeAction = self::UPGRADE_KEY;
 
             try {
                 switch ($upgradeAction) {
                     case self::DOWNGRADE_KEY:
                         //downgrade action
+                        $model->downgrade($migration, $migrationArray);
                         $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
                         break;
                     case self::UPGRADE_KEY:
-                    default:
                         //upgrade action
                         $model->upgrade($migration, $migrationArray);
                         $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
+                        break;
+                    default:
+                        throw new \Exception('Not set action');
                         break;
                 }
                 continue;
@@ -138,6 +158,6 @@ EOD;
         $model = new Migration($adapter);
         $lastMigration = $model->last();
         
-        $console->writeLine('Last applied migration: ' . $lastMigration, Color::GREEN);
+        $console->writeLine('Last applied the migration: ' . $lastMigration, Color::GREEN);
     }
 }

@@ -108,8 +108,6 @@ class Migration
      * 
      * @param string $migrationName
      * @paran array $migrationArray
-     * @return bool
-     * @throw Exception
      */
     public function upgrade($migrationName, $migrationArray)
     {
@@ -120,8 +118,19 @@ class Migration
         $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
     }
     
-    public function downgrade($migration)
+    /**
+     * Apply down on the migration
+     * And remove migration name from base
+     * 
+     * @param type $migrationName
+     * @param type $migrationArray
+     */
+    public function downgrade($migrationName, $migrationArray)
     {
+        $query = $migrationArray['down'];
+        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
         
+        $query = 'DELETE FROM `'.self::TABLE.'` WHERE migration = "'.$migrationName.'"';
+        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
     }
 }
