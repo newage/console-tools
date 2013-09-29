@@ -9,7 +9,6 @@ For actions of database. Create migrations, apply fixtures and reset schema
 Add to jour composer.json
 ```
 "require": {
-    ...
     "newage/console-tools": "<release-number>"
 },
 "repositories": [
@@ -22,7 +21,7 @@ Add to jour composer.json
 
 Copy zf.php file to home project folder
 ```
-$> cp vendor/neeage/console-tools/zf.php zf.php
+$> cp vendor/newage/console-tools/zf.php zf.php
 ```
 
 ##Usage
