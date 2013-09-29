@@ -48,7 +48,13 @@ class SchemaController extends AbstractActionController
             $dumpFileName = 'clean.sql';
         }
 
-        $dumpFilePath = getcwd() . self::SQL_FOLDER . $dumpFileName;
+        $dumpFileDir = getcwd() . self::SQL_FOLDER;
+        $dumpFilePath = $dumpFileDir . $dumpFileName;
+        if (!is_dir($dumpFileDir)) {
+            mkdir($dumpFileDir, 0777);
+            file_put_contents($dumpFilePath, '#Your default sql dump');
+        }
+        
         if (!file_exists($dumpFilePath)) {
             $console->writeLine('File don\'t exists: ' . $dumpFileName, Color::RED);
             return false;

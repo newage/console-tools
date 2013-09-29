@@ -31,7 +31,7 @@ class Module
             'migration create'  => 'Create new migration',
             'migration upgrade [migration number]' => 'Upgrade to last migration',
             array('[migration number]', '[Optional] Number of migration for upgrade or downgrade'),
-            'migration current' => 'Show current applying migration number',
+            'migration last' => 'Show last applied migration number',
         );
     }
     
