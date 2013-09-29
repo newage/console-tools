@@ -37,6 +37,5 @@
         "classmap": [
             "./Module.php"
         ]
-    },
-    "bin": ["zf.php"]
+    }
 }

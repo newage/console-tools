@@ -6,7 +6,7 @@ use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Console\ColorInterface as Color;
 use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\Exception\RuntimeException;
-use Zend\Db\Adapter\Adapter;
+use ConsoleTools\Model\Migration;
 
 /**
  * Controller for console operations as create, upgrate and current migrations
@@ -25,14 +25,7 @@ class MigrationController extends AbstractActionController
      * @var string
      */
     const MIGRATION_FOLDER = '/config/migrations/';
-    
-    /**
-     * Migration table name of database
-     * 
-     * @var string
-     */
-    const MIGRATION_TABLE = 'migrations';
-    
+
     /**
      * Create new migration file
      * 
@@ -59,8 +52,6 @@ class MigrationController extends AbstractActionController
         file_put_contents($migrationPath . $migrationName, $migrationContent);
         
         $console->writeLine('Create new migration file: ' . $migrationName, Color::GREEN);
-        
-        
     }
     
     /**
@@ -73,9 +64,7 @@ class MigrationController extends AbstractActionController
         $console = $this->getServiceLocator()->get('console');
         $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         
-        $migration = new \Migrations\Migration_1380369559();
-        $migration->up();
-        die;
+        
         
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
@@ -83,7 +72,7 @@ class MigrationController extends AbstractActionController
     }
     
     /**
-     * Show current applying migration number
+     * Show current applied migration number
      * 
      */
     public function currentAction()
@@ -92,5 +81,11 @@ class MigrationController extends AbstractActionController
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
+        
+        $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $model = new Migration($adapter);
+        $currentMigration = $model->current();
+        
+        $console->writeLine('Current applied migration: ' . $currentMigration, Color::GREEN);
     }
 }
