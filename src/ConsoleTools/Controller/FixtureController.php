@@ -65,8 +65,12 @@ class FixtureController extends AbstractActionController
             
             foreach ($fixture as $tableName => $rows) {
                 $console->writeLine('Will apply fixture of the table "'.$tableName.'" from file: '.$fixtureFile, Color::GREEN);
-                foreach ($rows as $rowNumber => $row) {
+                $values = isset($rows['values']) ? $rows['values'] : $rows;
+
+                foreach ($values as $rowNumber => $row) {
                     try {
+                        $row = isset($rows['keys']) ? array_combine($rows['keys'], $row) : $row;
+                        
                         $model->insert($tableName, $row);
                         $console->writeLine(' - applied row: ' . $rowNumber, Color::GREEN);
                     } catch (\Exception $err) {
