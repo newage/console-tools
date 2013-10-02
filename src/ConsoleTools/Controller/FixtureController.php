@@ -72,7 +72,6 @@ class FixtureController extends AbstractActionController
                         $row = isset($rows['keys']) ? array_combine($rows['keys'], $row) : $row;
                         
                         $model->insert($tableName, $row);
-                        $console->writeLine(' - applied row: ' . $rowNumber, Color::GREEN);
                     } catch (\Exception $err) {
                         $console->writeLine(' - error in row: ' . $rowNumber, Color::RED);
                         $console->writeLine($err->getMessage(), Color::RED);

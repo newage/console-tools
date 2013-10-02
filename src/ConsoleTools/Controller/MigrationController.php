@@ -30,6 +30,20 @@ class MigrationController extends AbstractActionController
     const DOWNGRADE_KEY = 'down';
 
     /**
+     * Execute one migration
+     * 
+     */
+    public function executeAction()
+    {
+        $console = $this->getServiceLocator()->get('console');
+        $request = $this->getRequest();
+        
+        $request->getParam('up');
+        $request->getParam('down');
+        die;
+    }
+    
+    /**
      * Create new migration file
      * 
      * @throws RuntimeException
@@ -47,7 +61,11 @@ class MigrationController extends AbstractActionController
             mkdir($migrationPath, 0777);
         }
         
-        $migrationName = time() . '.php';
+        $timeZone = new \DateTimeZone('Europe/Kiev');
+        $date = new \DateTime('NOW');
+        $date->setTimezone($timeZone);
+        
+        $migrationName = $date->format('YmdHis') . '.php';
         
         $migrationContent = <<<EOD
 <?php

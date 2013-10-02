@@ -31,10 +31,19 @@ return array(
                 ),
                 'migration-upgrade' => array(
                     'options' => array(
-                        'route'    => 'migration upgrade [<number>]',
+                        'route'    => 'migration migrate [<number>]',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'upgrade'
+                        )
+                    )
+                ),
+                'migration-execute' => array(
+                    'options' => array(
+                        'route'    => 'migration execute <number> (--up|--down)',
+                        'defaults' => array(
+                            'controller' => 'ConsoleTools\Controller\Migration',
+                            'action'     => 'execute'
                         )
                     )
                 ),

@@ -24,18 +24,21 @@ class Module
     {
         return array(
             'Schema:',
-            'schema clean [dump file]' => 'Clean current schema and apply dump file \'clean.sql\'',
-            array('[dump file]', '[Optional] name of sql file for apply from folder ./config/sql'),
+            'schema clean [<dump>]' => 'Clean current schema and apply dump file \'clean.sql\'',
+            array('<dump>'           , 'Name of sql file for apply from folder ./config/sql'),
             
             'Migrations:',
-            'migration create'                     => 'Create new migration',
-            'migration upgrade [migration number]' => 'Upgrade to last migration',
-            array('[migration number]'                 , '[Optional] Number of migration for upgrade or downgrade'),
-            'migration last'                       => 'Show last applied migration number',
+            'migration create'                          => 'Create new migration on format "YmdHis"',
+            'migration migrate [<migration>]'           => 'Execute a migration to a specified version or the latest available version.',
+            'migration execute <migration> --up|--down' => 'Execute a single migration version up or down manually.',
+            'migration last'                            => 'Show last applied migration number',
+            array('<migration>'                          , 'Number of migration'),
+            array('--up'                                 , 'Execute action up of one migration'),
+            array('--down'                               , 'Execute action down of one migration'),
             
             'Fixtures:',
-            'fixture apply [fixture name]' => 'Apply all/name fixture',
-            array('[fixture name]', '[Optional] Apply only there fixture'),
+            'fixture apply [<fixture>]' => 'Apply all/name fixture',
+            array('<fixture>'            , 'Apply only there fixture'),
         );
     }
     
