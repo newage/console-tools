@@ -24,7 +24,7 @@ class MigrationController extends AbstractActionController
      * 
      * @var string
      */
-    const MIGRATION_FOLDER = '/config/migrations/';
+    protected $_migrationFolder = null;
     
     const UPGRADE_KEY = 'up';
     const DOWNGRADE_KEY = 'down';
@@ -35,12 +35,36 @@ class MigrationController extends AbstractActionController
      */
     public function executeAction()
     {
+        $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $model   = new Migration($adapter);
+        $config  = $this->getServiceLocator()->get('config');
         $console = $this->getServiceLocator()->get('console');
         $request = $this->getRequest();
         
-        $request->getParam('up');
-        $request->getParam('down');
-        die;
+        if ($request->getParam('up')) {
+            $model->upgrade($migration, $migrationArray);
+            $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
+        } elseif ($request->getParam('down')) {
+            $model->downgrade($migration, $migrationArray);
+            $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
+        }
+    }
+    
+    /**
+     * Get migration folder from config file
+     * @return type
+     */
+    protected function _getMigrationFolder()
+    {
+        if ($this->_migrationFolder === null) {
+            $config = $this->getServiceLocator()->get('config');
+            if (isset($config['console-tools']['folders']['migrations'])) {
+                $this->_migrationFolder = getcwd() . $config['console-tools']['folders']['migrations'];
+            } else {
+                $this->_migrationFolder = getcwd() . '/config/migrations/';
+            }
+        }
+        return $this->_migrationFolder;
     }
     
     /**
@@ -56,7 +80,7 @@ class MigrationController extends AbstractActionController
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
         
-        $migrationPath = getcwd() . self::MIGRATION_FOLDER;
+        $migrationPath = $this->_getMigrationFolder();
         if (!is_dir($migrationPath)) {
             mkdir($migrationPath, 0777);
         }
@@ -99,7 +123,7 @@ EOD;
         $request             = $this->getRequest();
         $toMigration         = $request->getParam('number', 'all');
         $migrationsFromBase  = $model->applied();
-        $migrationFolderPath = getcwd() . self::MIGRATION_FOLDER;
+        $migrationFolderPath = $this->_getMigrationFolder();
         $files               = array();
         
         if ($toMigration == 'all') {

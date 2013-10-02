@@ -24,7 +24,7 @@ class FixtureController extends AbstractActionController
      * 
      * @var string
      */
-    const FIXTURE_FOLDER = '/config/fixtures/';
+    protected $_fixtureFolder = null;
     
     /**
      * Apply fixture
@@ -39,11 +39,10 @@ class FixtureController extends AbstractActionController
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
         
-        $fixturePath = getcwd() . self::FIXTURE_FOLDER;
+        $fixturePath = $this->_getFixtureFolder();
         if (!is_dir($fixturePath)) {
             mkdir($fixturePath, 0777);
-            $console->writeLine('Don\'t exists folder fixtures!', Color::RED);
-            $console->writeLine('Already create fixtures folder: ' . self::FIXTURE_FOLDER, Color::GREEN);
+            $console->writeLine('Don\'t exists folder of fixtures!', Color::RED);
             return;
         }
         
@@ -81,5 +80,22 @@ class FixtureController extends AbstractActionController
         }
         
         $console->writeLine('Fixture files applied', Color::GREEN);
+    }
+    
+    /**
+     * Get migration folder from config file
+     * @return type
+     */
+    protected function _getFixtureFolder()
+    {
+        if ($this->_fixtureFolder === null) {
+            $config = $this->getServiceLocator()->get('config');
+            if (isset($config['console-tools']['folders']['migrations'])) {
+                $this->_fixtureFolder = getcwd() . $config['console-tools']['folders']['fixtures'];
+            } else {
+                $this->_fixtureFolder = getcwd() . '/config/fixtures/';
+            }
+        }
+        return $this->_fixtureFolder;
     }
 }
