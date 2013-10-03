@@ -26,7 +26,7 @@ class SchemaController extends AbstractActionController
      * 
      * @var string
      */
-    const SQL_FOLDER = '/config/sql/';
+    protected $_schemaFolder = null;
     
     /**
      * Clean current schema and apply sql dump file
@@ -48,7 +48,7 @@ class SchemaController extends AbstractActionController
             $dumpFileName = 'clean.sql';
         }
 
-        $dumpFileDir = getcwd() . self::SQL_FOLDER;
+        $dumpFileDir = $this->_getSchemaFolder();
         $dumpFilePath = $dumpFileDir . $dumpFileName;
         if (!is_dir($dumpFileDir)) {
             mkdir($dumpFileDir, 0777);
@@ -75,6 +75,23 @@ class SchemaController extends AbstractActionController
         $adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
         $console->writeLine('Applied dump file: ' . $dumpFileName, Color::GREEN);
         
+    }
+    
+    /**
+     * Get migration folder from config file
+     * @return type
+     */
+    protected function _getSchemaFolder()
+    {
+        if ($this->_fixtureFolder === null) {
+            $config = $this->getServiceLocator()->get('config');
+            if (isset($config['console-tools']['folders']['migrations'])) {
+                $this->_fixtureFolder = getcwd() . $config['console-tools']['folders']['fixtures'];
+            } else {
+                $this->_fixtureFolder = getcwd() . '/config/schema/';
+            }
+        }
+        return $this->_fixtureFolder;
     }
 }
 

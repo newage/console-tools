@@ -35,36 +35,28 @@ class MigrationController extends AbstractActionController
      */
     public function executeAction()
     {
-        $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
-        $model   = new Migration($adapter);
-        $config  = $this->getServiceLocator()->get('config');
-        $console = $this->getServiceLocator()->get('console');
-        $request = $this->getRequest();
+        $adapter   = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $model     = new Migration($adapter);
+        $console   = $this->getServiceLocator()->get('console');
+        $request   = $this->getRequest();
+        $migration = $request->getParam('number');
         
-        if ($request->getParam('up')) {
-            $model->upgrade($migration, $migrationArray);
-            $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
-        } elseif ($request->getParam('down')) {
-            $model->downgrade($migration, $migrationArray);
-            $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
-        }
-    }
-    
-    /**
-     * Get migration folder from config file
-     * @return type
-     */
-    protected function _getMigrationFolder()
-    {
-        if ($this->_migrationFolder === null) {
-            $config = $this->getServiceLocator()->get('config');
-            if (isset($config['console-tools']['folders']['migrations'])) {
-                $this->_migrationFolder = getcwd() . $config['console-tools']['folders']['migrations'];
-            } else {
-                $this->_migrationFolder = getcwd() . '/config/migrations/';
+        $migrationPath = $this->_getMigrationFolder();
+        $filePath = $migrationPath . $migration . '.php';
+        
+        if (!file_exists($filePath)) {
+            $console->writeLine('Migration doesn\'t exists: ' . $migration, Color::RED);
+        } else {
+            $migrationArray = include $filePath;
+
+            if ($request->getParam('up')) {
+                $model->upgrade($migration, $migrationArray);
+                $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
+            } elseif ($request->getParam('down')) {
+                $model->downgrade($migration, $migrationArray);
+                $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
             }
         }
-        return $this->_migrationFolder;
     }
     
     /**
@@ -201,5 +193,22 @@ EOD;
         $lastMigration = $model->last();
         
         $console->writeLine('Last applied the migration: ' . $lastMigration, Color::GREEN);
+    }
+    
+    /**
+     * Get migration folder from config file
+     * @return type
+     */
+    protected function _getMigrationFolder()
+    {
+        if ($this->_migrationFolder === null) {
+            $config = $this->getServiceLocator()->get('config');
+            if (isset($config['console-tools']['folders']['migrations'])) {
+                $this->_migrationFolder = getcwd() . $config['console-tools']['folders']['migrations'];
+            } else {
+                $this->_migrationFolder = getcwd() . '/config/migrations/';
+            }
+        }
+        return $this->_migrationFolder;
     }
 }
