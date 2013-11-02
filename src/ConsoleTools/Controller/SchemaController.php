@@ -53,6 +53,8 @@ class SchemaController extends AbstractActionController
         if (!is_dir($dumpFileDir)) {
             mkdir($dumpFileDir, 0777);
             file_put_contents($dumpFilePath, '#Your default sql dump');
+            $console->writeLine('Created folder for clean schema: ' . $dumpFileName, Color::GREEN);
+            return false;
         }
         
         if (!file_exists($dumpFilePath)) {
@@ -83,15 +85,15 @@ class SchemaController extends AbstractActionController
      */
     protected function _getSchemaFolder()
     {
-        if ($this->_fixtureFolder === null) {
+        if ($this->_schemaFolder === null) {
             $config = $this->getServiceLocator()->get('config');
-            if (isset($config['console-tools']['folders']['migrations'])) {
-                $this->_fixtureFolder = getcwd() . $config['console-tools']['folders']['fixtures'];
+            if (isset($config['console-tools']['folders']['schema'])) {
+                $this->_schemaFolder = getcwd() . $config['console-tools']['folders']['schema'];
             } else {
-                $this->_fixtureFolder = getcwd() . '/config/schema/';
+                $this->_schemaFolder = getcwd() . '/config/schema/';
             }
         }
-        return $this->_fixtureFolder;
+        return $this->_schemaFolder;
     }
 }
 

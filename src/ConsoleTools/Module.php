@@ -5,6 +5,9 @@ namespace ConsoleTools;
 use Zend\Mvc\ModuleRouteListener;
 use Zend\Mvc\MvcEvent;
 use Zend\Console\Adapter\AdapterInterface as Console;
+use Zend\ModuleManager\Feature\AutoloaderProviderInterface;
+use Zend\ModuleManager\Feature\ConfigProviderInterface;
+use Zend\ModuleManager\Feature\ConsoleUsageProviderInterface;
 
 /**
  * 
@@ -13,7 +16,10 @@ use Zend\Console\Adapter\AdapterInterface as Console;
  * @since      php 5.3 or higher
  * @see        https://github.com/newage/console-tools
  */
-class Module
+class Module implements
+    AutoloaderProviderInterface,
+    ConfigProviderInterface,
+    ConsoleUsageProviderInterface
 {
     
     protected $_config = null;
@@ -69,7 +75,7 @@ class Module
     public function getConfig()
     {
         $config = include __DIR__ . '/../../config/module.config.php';
-        
+
         /* Remove schema routes */
         if ($this->_config['console-tools']['enable']['schema'] === false) {
             unset($config['console']['router']['routes']['schema-clean']);

@@ -1,6 +1,6 @@
 {
     "name":"newage/console-tools",
-    "description": "Utility module for Zend Framework 2",
+    "description": "Zend Framework 2 console module for work with database",
     "keywords": [
         "zf2",
         "tool",
@@ -9,26 +9,14 @@
     "repositories": [
         {
             "type": "vcs",
-            "url":  "git@github.com:newage/console-tools.git"
+            "url":  "https://github.com/newage/zf2-console-tools.git"
         }
     ],
-    "homepage": "https://github.com/newage/console-tools",
+    "homepage": "https://github.com/newage/zf2-console-tools.git",
     "license": "MIT",
     "require":{
         "php":">=5.3.3",
-        "zendframework/zend-code": ">=2.2.2",
-        "zendframework/zend-config": ">=2.2.2",
-        "zendframework/zend-console": ">=2.2.2",
-        "zendframework/zend-file": ">=2.2.2",
-        "zendframework/zend-loader": ">=2.2.2",
-        "zendframework/zend-modulemanager": ">=2.2.2",
-        "zendframework/zend-mvc": ">=2.2.2",
-        "zendframework/zend-serializer": ">=2.2.2",
-        "zendframework/zend-servicemanager": ">=2.2.2",
-        "zendframework/zend-stdlib": ">=2.2.2",
-        "zendframework/zend-text": ">=2.2.2",
-        "zendframework/zend-version": ">=2.2.2",
-        "zendframework/zend-view": ">=2.2.2"
+        "zendframework/zendframework": "2.2.*"
     },
     "autoload":{
         "psr-0":{
