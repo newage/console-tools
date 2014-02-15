@@ -9,10 +9,10 @@
     "repositories": [
         {
             "type": "vcs",
-            "url":  "https://github.com/newage/zf2-console-tools.git"
+            "url":  "https://github.com/newage/console-tools.git"
         }
     ],
-    "homepage": "https://github.com/newage/zf2-console-tools.git",
+    "homepage": "https://github.com/newage/console-tools.git",
     "license": "MIT",
     "require":{
         "php":">=5.3.3",
