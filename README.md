@@ -4,7 +4,7 @@ Console Tools
 Console utility module for Zend Framework 2
 For actions of database. Create migrations, apply fixtures and reset schema
 
-##Instal
+##Install
 
 Add to jour composer.json
 ```
@@ -19,14 +19,22 @@ Add to jour composer.json
 ]
 ```
 
-Copy zf.php file to home project folder
+Add 'ConsoleTools' to ./config/application.config.php
 ```
-$> cp vendor/newage/console-tools/zf.php zf.php
+'modules' => array(
+    ...
+    'ConsoleTools'
+),
+```
+
+Copy config file console-tools.local.php.dist to ./config/autoload/console-tools.local.php
+```
+cp ./vendor/newage/console-tools/config/console-tools.local.php.dist ./config/autoload/console-tools.local.php
 ```
 
 ##Usage
 
-Execute on console:
+Start console tools
 ```
-$> php zf.php
+$> php ./public/index.php
 ```
