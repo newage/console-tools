@@ -21,7 +21,7 @@ class Migration
      * 
      * @var Adapter
      */
-    protected $_adapter = null;
+    protected $adapter = null;
     
     /**
      * Migration table name of database
@@ -39,7 +39,7 @@ class Migration
      */
     public function __construct($adapter = null)
     {
-        $this->_adapter = $adapter;
+        $this->adapter = $adapter;
         $this->createTable();
     }
     
@@ -56,7 +56,7 @@ class Migration
             ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
         ";
 
-        $this->_adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
+        $this->adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
     }
     
     /**
@@ -66,13 +66,13 @@ class Migration
      */
     public function last()
     {
-        $sql = new Sql($this->_adapter);
+        $sql = new Sql($this->adapter);
         $select = $sql->select();
         $select->from(self::TABLE);
         $select->columns(array('last' => new \Zend\Db\Sql\Expression('MAX(migration)')));
         
         $selectString = $sql->getSqlStringForSqlObject($select);
-        $results = $this->_adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+        $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
         return $results->current()->last;
     }
@@ -85,12 +85,12 @@ class Migration
     public function applied()
     {
         $migrationFiles = array();
-        $sql = new Sql($this->_adapter);
+        $sql = new Sql($this->adapter);
         $select = $sql->select();
         $select->from(self::TABLE);
         
         $selectString = $sql->getSqlStringForSqlObject($select);
-        $results = $this->_adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+        $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
         if ($results->count() > 0) {
             foreach ($results as $migration) {
@@ -100,37 +100,58 @@ class Migration
             
         return $migrationFiles;
     }
-    
+
     /**
      * Apply up on the migration
      * And insert migration name to base
-     * @TODO need use transaction
-     * 
+     *
      * @param string $migrationName
-     * @paran array $migrationArray
+     * @param array $migrationArray
+     * @throws \Exception
      */
-    public function upgrade($migrationName, $migrationArray)
+    public function upgrade($migrationName, array $migrationArray)
     {
-        $query = $migrationArray['up'];
-        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
-        
-        $query = 'INSERT `'.self::TABLE.'` VALUE("'.$migrationName.'")';
-        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+        $connection = $this->adapter->getDriver()->getConnection();
+        try {
+            $connection->beginTransaction();
+
+            $query = $migrationArray['up'];
+            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+
+            $query = 'INSERT `'.self::TABLE.'` VALUE("'.$migrationName.'")';
+            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+
+            $connection->commit();
+        } catch (\Exception $exception) {
+            $connection->rollback();
+            throw new \Exception($exception->getMessage());
+        }
     }
-    
+
     /**
      * Apply down on the migration
      * And remove migration name from base
-     * 
-     * @param type $migrationName
-     * @param type $migrationArray
+     *
+     * @param string $migrationName
+     * @param array $migrationArray
+     * @throws \Exception
      */
-    public function downgrade($migrationName, $migrationArray)
+    public function downgrade($migrationName, array $migrationArray)
     {
-        $query = $migrationArray['down'];
-        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
-        
-        $query = 'DELETE FROM `'.self::TABLE.'` WHERE migration = "'.$migrationName.'"';
-        $this->_adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+        $connection = $this->adapter->getDriver()->getConnection();
+        try {
+            $connection->beginTransaction();
+
+            $query = $migrationArray['down'];
+            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+
+            $query = 'DELETE FROM `'.self::TABLE.'` WHERE migration = "'.$migrationName.'"';
+            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+
+            $connection->commit();
+        } catch(\Exception $exception) {
+            $connection->rollback();
+            throw new \Exception($exception->getMessage());
+        }
     }
 }
