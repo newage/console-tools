@@ -21,7 +21,7 @@ class Fixture
      * 
      * @var Adapter
      */
-    protected $_adapter = null;
+    protected $adapter = null;
     
     /**
      * Constructor
@@ -32,23 +32,23 @@ class Fixture
      */
     public function __construct($adapter = null)
     {
-        $this->_adapter = $adapter;
+        $this->adapter = $adapter;
     }
     
     /**
      * 
-     * @param type $tableName
-     * @param type $data
+     * @param string $tableName
+     * @param array $data
      * @return bool
      */
-    public function insert($tableName, $data)
+    public function insert($tableName, Array $data)
     {
-        $sql = new Sql($this->_adapter);
+        $sql = new Sql($this->adapter);
         $insert = $sql->insert($tableName);
         $insert->values($data);
         
         $sqlString = $sql->getSqlStringForSqlObject($insert);
-        $results = $this->_adapter->query($sqlString, Adapter::QUERY_MODE_EXECUTE);
+        $results = $this->adapter->query($sqlString, Adapter::QUERY_MODE_EXECUTE);
 
         return $results;
     }

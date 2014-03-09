@@ -24,7 +24,7 @@ class FixtureController extends AbstractActionController
      * 
      * @var string
      */
-    protected $_fixtureFolder = null;
+    protected $fixtureFolder = null;
     
     /**
      * Apply fixture
@@ -39,7 +39,7 @@ class FixtureController extends AbstractActionController
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
         
-        $fixturePath = $this->_getFixtureFolder();
+        $fixturePath = $this->getFixtureFolder();
         if (!is_dir($fixturePath)) {
             mkdir($fixturePath, 0777);
             $console->writeLine('Don\'t exists folder of fixtures!', Color::RED);
@@ -63,7 +63,10 @@ class FixtureController extends AbstractActionController
             $fixture = include $fixturePath . $fixtureFile;
             
             foreach ($fixture as $tableName => $rows) {
-                $console->writeLine('Will apply fixture of the table "'.$tableName.'" from file: '.$fixtureFile, Color::GREEN);
+                $console->writeLine(
+                    'Will apply fixture of the table "'.$tableName.'" from file: '.$fixtureFile,
+                    Color::GREEN
+                );
                 $values = isset($rows['values']) ? $rows['values'] : $rows;
 
                 foreach ($values as $rowNumber => $row) {
@@ -84,18 +87,19 @@ class FixtureController extends AbstractActionController
     
     /**
      * Get migration folder from config file
-     * @return type
+     *
+     * @return string
      */
-    protected function _getFixtureFolder()
+    protected function getFixtureFolder()
     {
-        if ($this->_fixtureFolder === null) {
+        if ($this->fixtureFolder === null) {
             $config = $this->getServiceLocator()->get('config');
             if (isset($config['console-tools']['folders']['migrations'])) {
-                $this->_fixtureFolder = getcwd() . $config['console-tools']['folders']['fixtures'];
+                $this->fixtureFolder = getcwd() . $config['console-tools']['folders']['fixtures'];
             } else {
-                $this->_fixtureFolder = getcwd() . '/config/fixtures/';
+                $this->fixtureFolder = getcwd() . '/config/fixtures/';
             }
         }
-        return $this->_fixtureFolder;
+        return $this->fixtureFolder;
     }
 }

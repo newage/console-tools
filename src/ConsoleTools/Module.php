@@ -22,7 +22,7 @@ class Module implements
     ConsoleUsageProviderInterface
 {
     
-    protected $_config = null;
+    protected $config = null;
     
     /**
      * Create documentaion for console usage that module
@@ -32,7 +32,7 @@ class Module implements
     {
         $docs = array();
         
-        if ($this->_config['console-tools']['enable']['schema']) {
+        if ($this->config['console-tools']['enable']['schema']) {
             $docs = array_merge($docs, array(
                 'Schema:',
                 'schema clean [<dump>]' => 'Clean current schema and apply dump file \'clean.sql\'',
@@ -40,7 +40,7 @@ class Module implements
             ));
         }
         
-        if ($this->_config['console-tools']['enable']['migrations']) {
+        if ($this->config['console-tools']['enable']['migrations']) {
             $docs = array_merge($docs, array(
                 'Migrations:',
                 'migration create'                          => 'Create new migration on format "YmdHis"',
@@ -55,7 +55,7 @@ class Module implements
             ));
         }
         
-        if ($this->_config['console-tools']['enable']['fixtures']) {
+        if ($this->config['console-tools']['enable']['fixtures']) {
             $docs = array_merge($docs, array(
                 'Fixtures:',
                 'fixture apply [<fixture>]' => 'Apply all/name fixture',
@@ -68,7 +68,7 @@ class Module implements
     
     public function onBootstrap(MvcEvent $e)
     {
-        $this->_config       = $e->getApplication()->getServiceManager()->get('config');
+        $this->config        = $e->getApplication()->getServiceManager()->get('config');
         $eventManager        = $e->getApplication()->getEventManager();
         $moduleRouteListener = new ModuleRouteListener();
         $moduleRouteListener->attach($eventManager);
@@ -79,12 +79,12 @@ class Module implements
         $config = include __DIR__ . '/../../config/module.config.php';
 
         /* Remove schema routes */
-        if ($this->_config['console-tools']['enable']['schema'] === false) {
+        if ($this->config['console-tools']['enable']['schema'] === false) {
             unset($config['console']['router']['routes']['schema-clean']);
         }
         
         /* Remove migrations routes */
-        if ($this->_config['console-tools']['enable']['migrations'] === false) {
+        if ($this->config['console-tools']['enable']['migrations'] === false) {
             unset($config['console']['router']['routes']['migration-create']);
             unset($config['console']['router']['routes']['migration-upgrade']);
             unset($config['console']['router']['routes']['migration-execute']);
@@ -92,7 +92,7 @@ class Module implements
         }
         
         /* Remove fixtures routes */
-        if ($this->_config['console-tools']['enable']['fixtures'] === false) {
+        if ($this->config['console-tools']['enable']['fixtures'] === false) {
             unset($config['console']['router']['routes']['fixture-apply']);
         }
         

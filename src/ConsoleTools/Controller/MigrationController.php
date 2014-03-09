@@ -24,7 +24,7 @@ class MigrationController extends AbstractActionController
      * 
      * @var string
      */
-    protected $_migrationFolder = null;
+    protected $migrationFolder = null;
     
     const UPGRADE_KEY = 'up';
     const DOWNGRADE_KEY = 'down';
@@ -35,13 +35,15 @@ class MigrationController extends AbstractActionController
      */
     public function executeAction()
     {
+        /* @var $adapter \Zend\Db\Adapter\Adapter */
+        /* @var $console Console */
         $adapter   = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $model     = new Migration($adapter);
         $console   = $this->getServiceLocator()->get('console');
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
         
-        $migrationPath = $this->_getMigrationFolder();
+        $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
         
         if (!file_exists($filePath)) {
@@ -72,7 +74,7 @@ class MigrationController extends AbstractActionController
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
         
-        $migrationPath = $this->_getMigrationFolder();
+        $migrationPath = $this->getMigrationFolder();
         if (!is_dir($migrationPath)) {
             mkdir($migrationPath, 0777);
         }
@@ -115,7 +117,7 @@ EOD;
         $request             = $this->getRequest();
         $toMigration         = $request->getParam('number', 'all');
         $migrationsFromBase  = $model->applied();
-        $migrationFolderPath = $this->_getMigrationFolder();
+        $migrationFolderPath = $this->getMigrationFolder();
         $files               = array();
         
         if ($toMigration == 'all') {
@@ -131,7 +133,7 @@ EOD;
             $files = array_diff($filesFromDrive, $migrationsFromBase);
             asort($files, SORT_NUMERIC);
             $upgradeAction = self::UPGRADE_KEY;
-        } else if (in_array($toMigration, $migrationsFromBase)) {
+        } elseif (in_array($toMigration, $migrationsFromBase)) {
             $key = array_search($toMigration, $migrationsFromBase);
             $files = array_slice($migrationsFromBase, $key);
             rsort($files, SORT_NUMERIC);
@@ -197,18 +199,19 @@ EOD;
     
     /**
      * Get migration folder from config file
-     * @return type
+     *
+     * @return string
      */
-    protected function _getMigrationFolder()
+    protected function getMigrationFolder()
     {
-        if ($this->_migrationFolder === null) {
+        if ($this->migrationFolder === null) {
             $config = $this->getServiceLocator()->get('config');
             if (isset($config['console-tools']['folders']['migrations'])) {
-                $this->_migrationFolder = getcwd() . $config['console-tools']['folders']['migrations'];
+                $this->migrationFolder = getcwd() . $config['console-tools']['folders']['migrations'];
             } else {
-                $this->_migrationFolder = getcwd() . '/config/migrations/';
+                $this->migrationFolder = getcwd() . '/config/migrations/';
             }
         }
-        return $this->_migrationFolder;
+        return $this->migrationFolder;
     }
 }
