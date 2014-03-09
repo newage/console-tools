@@ -9,14 +9,18 @@
     "repositories": [
         {
             "type": "vcs",
-            "url":  "https://github.com/newage/zf2-console-tools.git"
+            "url":  "https://github.com/newage/console-tools.git"
         }
     ],
-    "homepage": "https://github.com/newage/zf2-console-tools.git",
+    "homepage": "https://github.com/newage/console-tools.git",
     "license": "MIT",
     "require":{
         "php":">=5.3.3",
         "zendframework/zendframework": "2.2.*"
+    },
+    "require-dev":{
+        "phpunit/phpunit": "3.7.*",
+        "squizlabs/php_codesniffer": "1.5.*"
     },
     "autoload":{
         "psr-0":{

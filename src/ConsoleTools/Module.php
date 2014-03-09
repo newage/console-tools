@@ -44,8 +44,10 @@ class Module implements
             $docs = array_merge($docs, array(
                 'Migrations:',
                 'migration create'                          => 'Create new migration on format "YmdHis"',
-                'migration migrate [<migration>]'           => 'Execute a migration to a specified version or the latest available version.',
-                'migration execute <migration> --up|--down' => 'Execute a single migration version up or down manually.',
+                'migration migrate [<migration>]'           =>
+                    'Execute a migration to a specified version or the latest available version.',
+                'migration execute <migration> --up|--down' =>
+                    'Execute a single migration version up or down manually.',
                 'migration last'                            => 'Show last applied migration number',
                 array('<migration>'                          , 'Number of migration'),
                 array('--up'                                 , 'Execute action up of one migration'),

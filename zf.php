@@ -31,10 +31,10 @@ if (file_exists("$basePath/config/application.config.php")) {
         ),
         'module_listener_options' => array(
             'config_glob_paths'    => array(
-                'config/autoload/{,*.}{global,local}.php',
+                'config/{,*.}{global,local}.php',
             ),
             'module_paths' => array(
-		'.',
+                '.',
                 './vendor',
             ),
         ),

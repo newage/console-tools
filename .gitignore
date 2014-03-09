@@ -1,4 +1,4 @@
-/vendor/*
-/composer*
-!/composer.json
+vendor
+composer.phar
+composer.lock
 .idea
