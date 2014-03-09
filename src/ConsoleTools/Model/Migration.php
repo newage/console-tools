@@ -115,8 +115,13 @@ class Migration
         try {
             $connection->beginTransaction();
 
-            $query = $migrationArray['up'];
-            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            $queries = explode(';', $migrationArray['up']);
+            foreach ($queries as $query) {
+                if (trim($query) == '') {
+                    continue;
+                }
+                $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            }
 
             $query = 'INSERT `'.self::TABLE.'` VALUE("'.$migrationName.'")';
             $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
