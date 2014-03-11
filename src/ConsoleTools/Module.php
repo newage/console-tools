@@ -25,7 +25,7 @@ class Module implements
     protected $config = null;
     
     /**
-     * Create documentaion for console usage that module
+     * Create documentation for console usage that module
      * 
      */
     public function getConsoleUsage(Console $console)

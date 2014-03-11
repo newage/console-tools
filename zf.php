@@ -31,7 +31,7 @@ if (file_exists("$basePath/config/application.config.php")) {
         ),
         'module_listener_options' => array(
             'config_glob_paths'    => array(
-                'config/{,*.}{global,local}.php',
+                'config/autoload/{,*.}{global,local}.php',
             ),
             'module_paths' => array(
                 '.',
