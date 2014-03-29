@@ -43,7 +43,7 @@ class MigrationController extends AbstractActionController
         
         $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
-
+$this->applyMigration(self::UPGRADE_KEY, $migration, array('up'=>'SELECT * FROM users;'));
         if (!file_exists($filePath)) {
             $console->writeLine('Migration does not exists: ' . $migration, Color::RED);
         } else {
@@ -74,7 +74,9 @@ class MigrationController extends AbstractActionController
         $model      = new Migration($adapter);
         $methodName = $action == self::UPGRADE_KEY ? 'upgrade' : 'downgrade';
 
-        $console->writeLine('Current migration: '.$migration, Color::YELLOW);
+        $console->writeLine();
+        $console->write('Current migration: ');
+        $console->writeLine($migration, Color::GREEN);
         $console->writeLine($migrationArray[$action], Color::BLUE);
 
         if (Confirm::prompt('Need apply this migration? [y/n]', 'y', 'n')) {
@@ -88,6 +90,8 @@ class MigrationController extends AbstractActionController
             $console->writeLine('This migration discarded', Color::RED);
             return false;
         }
+
+        return true;
     }
 
     /**
