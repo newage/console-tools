@@ -51,10 +51,8 @@ class MigrationController extends AbstractActionController
 
             if ($request->getParam('up')) {
                 $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
-                $console->writeLine('Upgraded of the migration: ' . $migration, Color::GREEN);
             } elseif ($request->getParam('down')) {
                 $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
-                $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
             }
         }
     }
@@ -76,11 +74,16 @@ class MigrationController extends AbstractActionController
         $model      = new Migration($adapter);
         $methodName = $action == self::UPGRADE_KEY ? 'upgrade' : 'downgrade';
 
-        $console->writeLine('Current migration: '.$migration, Color::GREEN);
+        $console->writeLine('Current migration: '.$migration, Color::YELLOW);
         $console->writeLine($migrationArray[$action], Color::BLUE);
 
         if (Confirm::prompt('Need apply this migration? [y/n]', 'y', 'n')) {
-            return $model->$methodName($migration, $migrationArray);
+            $model->$methodName($migration, $migrationArray);
+            if ($action == self::UPGRADE_KEY) {
+                $console->writeLine('This migration successful upgraded', Color::GREEN);
+            } else {
+                $console->writeLine('This migration successful downgraded', Color::GREEN);
+            }
         } else {
             $console->writeLine('This migration discarded', Color::RED);
             return false;
@@ -185,12 +188,10 @@ EOD;
                     case self::DOWNGRADE_KEY:
                         //downgrade action
                         $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
-                        $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
                         break;
                     case self::UPGRADE_KEY:
                         //upgrade action
                         $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
-                        $console->writeLine('Upgraded of the migration: ' . $migration, Color::GREEN);
                         break;
                     default:
                         throw new \Exception('Not set action');
