@@ -43,9 +43,9 @@ class MigrationController extends AbstractActionController
         
         $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
-$this->applyMigration(self::UPGRADE_KEY, $migration, array('up'=>'SELECT * FROM users;'));
+
         if (!file_exists($filePath)) {
-            $console->writeLine('Migration does not exists: ' . $migration, Color::RED);
+            $console->writeLine('Migration does not exists: ' . $filePath, Color::RED);
         } else {
             $migrationArray = include $filePath;
 
@@ -76,10 +76,10 @@ $this->applyMigration(self::UPGRADE_KEY, $migration, array('up'=>'SELECT * FROM 
 
         $console->writeLine();
         $console->write('Current migration: ');
-        $console->writeLine($migration, Color::GREEN);
+        $console->writeLine($this->getMigrationFolder() . $migration . '.php', Color::YELLOW);
         $console->writeLine($migrationArray[$action], Color::BLUE);
 
-        if (Confirm::prompt('Need apply this migration? [y/n]', 'y', 'n')) {
+        if (Confirm::prompt('Apply this migration? [y/n]', 'y', 'n')) {
             $model->$methodName($migration, $migrationArray);
             if ($action == self::UPGRADE_KEY) {
                 $console->writeLine('This migration successful upgraded', Color::GREEN);
@@ -130,7 +130,7 @@ EOD;
         
         file_put_contents($migrationPath . $migrationName, $migrationContent);
         
-        $console->writeLine('Created new migration file: ' . $migrationName, Color::GREEN);
+        $console->writeLine('Created migration file: ' . $migrationPath . $migrationName, Color::GREEN);
     }
     
     /**
@@ -177,7 +177,7 @@ EOD;
         }
         
         if (!count($files)) {
-            $console->writeLine('You have last version database\'s', Color::GREEN);
+            $console->writeLine('You have last version of database', Color::GREEN);
             return;
         }
         
@@ -203,7 +203,7 @@ EOD;
                 }
                 continue;
             } catch (\Exception $err) {
-                $console->writeLine('Commit failed of the migration: ' . $migration, Color::RED);
+                $console->writeLine('Current migration failed commit', Color::RED);
                 $console->writeLine($err->getMessage(), Color::RED);
                 return;
             }
