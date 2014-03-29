@@ -7,6 +7,7 @@ use Zend\Console\ColorInterface as Color;
 use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\Exception\RuntimeException;
 use ConsoleTools\Model\Migration;
+use Zend\Console\Prompt\Confirm;
 
 /**
  * Controller for console operations as create, upgrate and current migrations
@@ -35,32 +36,57 @@ class MigrationController extends AbstractActionController
      */
     public function executeAction()
     {
-        /* @var $adapter \Zend\Db\Adapter\Adapter */
         /* @var $console Console */
-        $adapter   = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
-        $model     = new Migration($adapter);
         $console   = $this->getServiceLocator()->get('console');
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
         
         $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
-        
+
         if (!file_exists($filePath)) {
-            $console->writeLine('Migration doesn\'t exists: ' . $migration, Color::RED);
+            $console->writeLine('Migration does not exists: ' . $migration, Color::RED);
         } else {
             $migrationArray = include $filePath;
 
             if ($request->getParam('up')) {
-                $model->upgrade($migration, $migrationArray);
-                $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
+                $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
+                $console->writeLine('Upgraded of the migration: ' . $migration, Color::GREEN);
             } elseif ($request->getParam('down')) {
-                $model->downgrade($migration, $migrationArray);
+                $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
                 $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
             }
         }
     }
-    
+
+    /**
+     * Show confirm for migration
+     *
+     * @param string $action
+     * @param string $migration
+     * @param array $migrationArray
+     * @return bool
+     */
+    protected function applyMigration($action, $migration, $migrationArray)
+    {
+        /* @var $adapter \Zend\Db\Adapter\Adapter */
+        /* @var $console Console */
+        $adapter    = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $console    = $this->getServiceLocator()->get('console');
+        $model      = new Migration($adapter);
+        $methodName = $action == self::UPGRADE_KEY ? 'upgrade' : 'downgrade';
+
+        $console->writeLine('Current migration: '.$migration, Color::GREEN);
+        $console->writeLine($migrationArray[$action], Color::BLUE);
+
+        if (Confirm::prompt('Need apply this migration? [y/n]', 'y', 'n')) {
+            return $model->$methodName($migration, $migrationArray);
+        } else {
+            $console->writeLine('This migration discarded', Color::RED);
+            return false;
+        }
+    }
+
     /**
      * Create new migration file
      * 
@@ -97,7 +123,7 @@ EOD;
         
         file_put_contents($migrationPath . $migrationName, $migrationContent);
         
-        $console->writeLine('Create new migration file: ' . $migrationName, Color::GREEN);
+        $console->writeLine('Created new migration file: ' . $migrationName, Color::GREEN);
     }
     
     /**
@@ -139,12 +165,12 @@ EOD;
             rsort($files, SORT_NUMERIC);
             $upgradeAction = self::DOWNGRADE_KEY;
         } else {
-            $console->writeLine('Didn\'t apply the migration: ' . $toMigration, Color::RED);
+            $console->writeLine('Did not apply the migration: ' . $toMigration, Color::RED);
             return;
         }
         
         if (!count($files)) {
-            $console->writeLine('You have the last version of database', Color::GREEN);
+            $console->writeLine('You have last version database\'s', Color::GREEN);
             return;
         }
         
@@ -158,13 +184,13 @@ EOD;
                 switch ($upgradeAction) {
                     case self::DOWNGRADE_KEY:
                         //downgrade action
-                        $model->downgrade($migration, $migrationArray);
+                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
                         $console->writeLine('Downgraded of the migration: ' . $migration, Color::GREEN);
                         break;
                     case self::UPGRADE_KEY:
                         //upgrade action
-                        $model->upgrade($migration, $migrationArray);
-                        $console->writeLine('Applied the migration: ' . $migration, Color::GREEN);
+                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
+                        $console->writeLine('Upgraded of the migration: ' . $migration, Color::GREEN);
                         break;
                     default:
                         throw new \Exception('Not set action');
