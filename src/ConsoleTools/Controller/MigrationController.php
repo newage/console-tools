@@ -102,21 +102,30 @@ class MigrationController extends AbstractActionController
     public function createAction()
     {
         $console = $this->getServiceLocator()->get('console');
-        
+
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
-        
+
+        $config = $this->getServiceLocator()->get('Config');
+        if (isset($config['console-tools']['migration_template'])) {
+            $dateTemplate = $config['console-tools']['migration_template'];
+        } else {
+            $dateTemplate = 'YmdHis';
+        }
+
         $migrationPath = $this->getMigrationFolder();
         if (!is_dir($migrationPath)) {
             mkdir($migrationPath, 0777);
         }
         
         $timeZone = new \DateTimeZone('Europe/Kiev');
-        $date = new \DateTime('NOW');
+        $t = microtime(true);
+        $micro = sprintf("%06d",($t - floor($t)) * 1000000);
+        $date = new \DateTime( date('Y-m-d H:i:s.'.$micro,$t) );
         $date->setTimezone($timeZone);
         
-        $migrationName = $date->format('YmdHis') . '.php';
+        $migrationName = $date->format($dateTemplate) . '.php';
         
         $migrationContent = <<<EOD
 <?php

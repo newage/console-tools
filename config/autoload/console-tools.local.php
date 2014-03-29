@@ -11,6 +11,7 @@ return array(
             'migrations' => true,
             'fixtures' => true,
             'schema' => true
-        )
+        ),
+        'migration_template' => 'Ymd_Hisu'
     )
 );

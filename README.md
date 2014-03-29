@@ -4,6 +4,8 @@ Console Tools
 Console utility module for Zend Framework 2
 For actions of database. Create migrations, apply fixtures and reset schema
 
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/newage/console-tools/badges/quality-score.png?s=16582f9d14bafbdb8c33887da89da3b15ed4dd3e)](https://scrutinizer-ci.com/g/newage/console-tools/)
+
 ##Install
 
 Add to `composer.json`
