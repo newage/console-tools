@@ -20,7 +20,13 @@ use Zend\Db\Adapter\Adapter;
  */
 class SchemaController extends AbstractActionController
 {
-    
+
+    /**
+     * Folder to schema
+     * Folder must be there for use completion-bash
+     */
+    const FOLDER_SCHEMA = '/data/schema';
+
     /**
      * Sql folder destination
      * 
@@ -86,12 +92,7 @@ class SchemaController extends AbstractActionController
     protected function getSchemaFolder()
     {
         if ($this->schemaFolder === null) {
-            $config = $this->getServiceLocator()->get('config');
-            if (isset($config['console-tools']['folders']['schema'])) {
-                $this->schemaFolder = getcwd() . $config['console-tools']['folders']['schema'];
-            } else {
-                $this->schemaFolder = getcwd() . '/config/schema/';
-            }
+            $this->schemaFolder = getcwd() . self::FOLDER_SCHEMA;
         }
         return $this->schemaFolder;
     }

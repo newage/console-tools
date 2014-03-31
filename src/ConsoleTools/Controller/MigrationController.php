@@ -19,16 +19,22 @@ use Zend\Console\Prompt\Confirm;
  */
 class MigrationController extends AbstractActionController
 {
-    
+
+    /**
+     * Folder for migrations
+     * Folder must be there for use completion-bash
+     */
+    const FOLDER_MIGRATIONS = '/data/migrations';
+
+    const UPGRADE_KEY = 'up';
+    const DOWNGRADE_KEY = 'down';
+
     /**
      * Destination to folder with migration files
      * 
      * @var string
      */
     protected $migrationFolder = null;
-    
-    const UPGRADE_KEY = 'up';
-    const DOWNGRADE_KEY = 'down';
 
     /**
      * Execute one migration
@@ -245,13 +251,9 @@ EOD;
     protected function getMigrationFolder()
     {
         if ($this->migrationFolder === null) {
-            $config = $this->getServiceLocator()->get('config');
-            if (isset($config['console-tools']['folders']['migrations'])) {
-                $this->migrationFolder = getcwd() . $config['console-tools']['folders']['migrations'];
-            } else {
-                $this->migrationFolder = getcwd() . '/config/migrations/';
-            }
+            $this->migrationFolder = getcwd() . self::FOLDER_MIGRATIONS;
         }
+
         return $this->migrationFolder;
     }
 }

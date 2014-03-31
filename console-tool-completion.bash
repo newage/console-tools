@@ -1,6 +1,18 @@
 #!/bin/bash
 
-__console_tool(){
+_read_migrations() {
+    ls -1 ${PWD}/data/migrations/ | sed 's/\(.*\)\..*/\1/'
+}
+
+_read_schemas() {
+    ls -1 ${PWD}/data/schema/ | sed 's/\(.*\)\..*/\1/'
+}
+
+_read_fixtures() {
+    ls -1 ${PWD}/data/fixtures/ | sed 's/\(.*\)\..*/\1/'
+}
+
+__console_tool() {
 
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -22,11 +34,21 @@ __console_tool(){
             COMPREPLY=( $(compgen -W "${subcommands_schema}" -- ${cur}))
             return 0
         fi
+
+        if [[ ${COMP_CWORD} == 3 ]] ; then
+            COMPREPLY=( $(compgen -W "$(_read_schemas)" -- ${cur}))
+            return 0
+        fi
         return 0
         ;;
     fixture)
         if [[ ${COMP_CWORD} == 2 ]] ; then
             COMPREPLY=( $(compgen -W "${subcommands_fixture}" -- ${cur}))
+            return 0
+        fi
+
+        if [[ ${COMP_CWORD} == 3 ]] ; then
+            COMPREPLY=( $(compgen -W "$(_read_fixtures)" -- ${cur}))
             return 0
         fi
         return 0
@@ -37,10 +59,34 @@ __console_tool(){
             return 0
         fi
 
-        if [[ ${COMP_CWORD} == 4 ]] ; then
-            COMPREPLY=( $(compgen -W "${subcommands_migration_execute_params}" -- ${cur}))
+	subcmd_2="${COMP_WORDS[2]}"
+        case "${subcmd_2}" in
+        execute)
+
+            if [[ ${COMP_CWORD} == 3 ]] ; then
+                COMPREPLY=( $(compgen -W "$(_read_migrations)" -- ${cur}))
+                return 0
+            fi
+
+            if [[ ${COMP_CWORD} == 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${subcommands_migration_execute_params}" -- ${cur}))
+                return 0
+            fi
             return 0
-        fi
+            ;;
+
+        migrate)
+            if [[ ${COMP_CWORD} == 3 ]] ; then
+                COMPREPLY=( $(compgen -W "$(_read_migrations)" -- ${cur}))
+                return 0
+            fi
+
+            return 0
+            ;;
+
+        esac
+        return 0
+
         return 0
         ;;
     esac
