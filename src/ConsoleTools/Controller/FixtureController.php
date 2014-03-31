@@ -18,7 +18,13 @@ use ConsoleTools\Model\Fixture;
  */
 class FixtureController extends AbstractActionController
 {
-    
+
+    /**
+     * Folder for fixtures
+     * Folder must be there for use completion-bash
+     */
+    const FOLDER_FIXTURES = '/data/fixtures/';
+
     /**
      * Folder to fixture files
      * 
@@ -93,13 +99,9 @@ class FixtureController extends AbstractActionController
     protected function getFixtureFolder()
     {
         if ($this->fixtureFolder === null) {
-            $config = $this->getServiceLocator()->get('config');
-            if (isset($config['console-tools']['folders']['migrations'])) {
-                $this->fixtureFolder = getcwd() . $config['console-tools']['folders']['fixtures'];
-            } else {
-                $this->fixtureFolder = getcwd() . '/config/fixtures/';
-            }
+            $this->fixtureFolder = getcwd() . self::FOLDER_FIXTURES;
         }
+
         return $this->fixtureFolder;
     }
 }
