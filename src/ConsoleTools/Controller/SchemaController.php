@@ -25,7 +25,7 @@ class SchemaController extends AbstractActionController
      * Folder to schema
      * Folder must be there for use completion-bash
      */
-    const FOLDER_SCHEMA = '/data/schema';
+    const FOLDER_SCHEMA = '/data/schema/';
 
     /**
      * Sql folder destination

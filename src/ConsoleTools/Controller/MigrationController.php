@@ -24,7 +24,7 @@ class MigrationController extends AbstractActionController
      * Folder for migrations
      * Folder must be there for use completion-bash
      */
-    const FOLDER_MIGRATIONS = '/data/migrations';
+    const FOLDER_MIGRATIONS = '/data/migrations/';
 
     const UPGRADE_KEY = 'up';
     const DOWNGRADE_KEY = 'down';
