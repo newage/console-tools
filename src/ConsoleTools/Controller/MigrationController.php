@@ -137,10 +137,9 @@ class MigrationController extends AbstractActionController
 <?php
         
 return array(
-    'up' => '',
-    'down' => ''
+    'up' => "",
+    'down' => ""
 );
-                
 EOD;
         
         file_put_contents($migrationPath . $migrationName, $migrationContent);
@@ -235,12 +234,22 @@ EOD;
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
-        
+
+        $request = $this->getRequest();
         $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $model = new Migration($adapter);
         $lastMigration = $model->last();
-        
-        $console->writeLine('Last applied the migration: ' . $lastMigration, Color::GREEN);
+
+        $migrationName = $this->getMigrationFolder() . $lastMigration->last . '.php';
+        if ($request->getParam('show')) {
+            $console->writeLine('Last applied the migration: ' . $migrationName, Color::GREEN);
+            $console->writeLine('=== Up SQL ===', Color::YELLOW);
+            $console->writeLine($lastMigration->up, Color::GREEN);
+            $console->writeLine('=== Down SQL ===', Color::YELLOW);
+            $console->writeLine($lastMigration->down, Color::GREEN);
+        } else {
+            $console->writeLine('Last applied the migration: ' . $migrationName, Color::GREEN);
+        }
     }
     
     /**
