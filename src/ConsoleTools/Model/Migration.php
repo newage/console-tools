@@ -3,6 +3,8 @@
 namespace ConsoleTools\Model;
 
 use Zend\Db\Adapter\Adapter;
+use Zend\Db\Sql\Insert;
+use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Sql;
 
 /**
@@ -52,29 +54,36 @@ class Migration
     {
         $sql = "
             CREATE TABLE IF NOT EXISTS `".self::TABLE."`(
-                `migration` VARCHAR(20) NOT NULL
+                `migration` VARCHAR(20) NOT NULL,
+                `up` VARCHAR(1000) NOT NULL,
+                `down` VARCHAR(1000) NOT NULL
             ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
         ";
 
         $this->adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
     }
-    
+
     /**
      * Get a last migration
-     * 
+     *
+     * @param bool $isShow Show sql queries
      * @return string
      */
-    public function last()
+    public function last($isShow = false)
     {
         $sql = new Sql($this->adapter);
         $select = $sql->select();
         $select->from(self::TABLE);
-        $select->columns(array('last' => new \Zend\Db\Sql\Expression('MAX(migration)')));
+        $select->columns(array(
+            'last' => new \Zend\Db\Sql\Expression('MAX(migration)'),
+            'up',
+            'down'
+        ));
         
         $selectString = $sql->getSqlStringForSqlObject($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
-        return $results->current()->last;
+        return $results->current();
     }
     
     /**
@@ -123,8 +132,15 @@ class Migration
                 $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
             }
 
-            $query = 'INSERT `'.self::TABLE.'` VALUE("'.$migrationName.'")';
-            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            $sql = new Sql($this->adapter);
+            $insert = $sql->insert(self::TABLE);
+            $insert->values(array(
+                'migration' => $migrationName,
+                'up' => $migrationArray['up'],
+                'down' => $migrationArray['down']
+            ));
+            $selectString = $sql->getSqlStringForSqlObject($insert);
+            $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
             $connection->commit();
         } catch (\Exception $exception) {
