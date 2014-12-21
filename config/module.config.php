@@ -49,7 +49,7 @@ return array(
                 ),
                 'migration-last' => array(
                     'options' => array(
-                        'route'    => 'migration last (--show)',
+                        'route'    => 'migration last',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'last'
