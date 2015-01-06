@@ -1,6 +1,8 @@
 Console Tools
 ===========
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/newage/console-tools?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Console utility module for Zend Framework 2
 For actions of database. Create migrations, apply fixtures and reset schema
 
