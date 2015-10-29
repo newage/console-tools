@@ -183,15 +183,14 @@ EOD;
                 }
             }
             $filesFromDrive = array_diff($files, $migrationsFromBase);
-            asort($files, SORT_NUMERIC);
-        
+            asort($files, SORT_NATURAL);
             $files = array_diff($filesFromDrive, $migrationsFromBase);
-            asort($files, SORT_NUMERIC);
+            asort($files, SORT_NATURAL);
             $upgradeAction = self::UPGRADE_KEY;
         } elseif (in_array($toMigration, $migrationsFromBase)) {
             $key = array_search($toMigration, $migrationsFromBase);
             $files = array_slice($migrationsFromBase, $key);
-            rsort($files, SORT_NUMERIC);
+            rsort($files, SORT_NATURAL);
             $upgradeAction = self::DOWNGRADE_KEY;
         } else {
             $console->writeLine('Did not apply the migration: ' . $toMigration, Color::RED);
