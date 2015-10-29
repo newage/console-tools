@@ -22,7 +22,7 @@ return array(
                 ),
                 'migration-create' => array(
                     'options' => array(
-                        'route'    => 'migration create',
+                        'route'    => 'migration create [<short_name>]',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'create'

@@ -112,6 +112,11 @@ class MigrationController extends AbstractActionController
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
+        $request = $this->getRequest();
+        $short_name = $request->getParam('short_name', '');
+        if (!empty($short_name) && !preg_match('/^[a-z][a-z0-9-_]+$/', $short_name)) {
+            throw new RuntimeException('Name should start from latin letter and can contains only letters and numbers');
+        }
 
         $config = $this->getServiceLocator()->get('Config');
         if (isset($config['console-tools']['migration_template'])) {
@@ -124,14 +129,17 @@ class MigrationController extends AbstractActionController
         if (!is_dir($migrationPath)) {
             mkdir($migrationPath, 0777);
         }
-        
+
         $timeZone = new \DateTimeZone('Europe/Kiev');
         $t = microtime(true);
         $micro = sprintf("%06d",($t - floor($t)) * 1000000);
         $date = new \DateTime( date('Y-m-d H:i:s.'.$micro,$t) );
         $date->setTimezone($timeZone);
+        if ($short_name) {
+            $short_name = '_' . $short_name;
+        }
         
-        $migrationName = $date->format($dateTemplate) . '.php';
+        $migrationName = $date->format($dateTemplate) . $short_name . '.php';
         
         $migrationContent = <<<EOD
 <?php
@@ -175,15 +183,14 @@ EOD;
                 }
             }
             $filesFromDrive = array_diff($files, $migrationsFromBase);
-            asort($files, SORT_NUMERIC);
-        
+            asort($files, SORT_NATURAL);
             $files = array_diff($filesFromDrive, $migrationsFromBase);
-            asort($files, SORT_NUMERIC);
+            asort($files, SORT_NATURAL);
             $upgradeAction = self::UPGRADE_KEY;
         } elseif (in_array($toMigration, $migrationsFromBase)) {
             $key = array_search($toMigration, $migrationsFromBase);
             $files = array_slice($migrationsFromBase, $key);
-            rsort($files, SORT_NUMERIC);
+            rsort($files, SORT_NATURAL);
             $upgradeAction = self::DOWNGRADE_KEY;
         } else {
             $console->writeLine('Did not apply the migration: ' . $toMigration, Color::RED);
