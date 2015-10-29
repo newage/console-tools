@@ -43,7 +43,7 @@ class Module implements
         if ($this->config['console-tools']['enable']['migrations']) {
             $docs = array_merge($docs, array(
                 'Migrations:',
-                'migration create'                          => 'Create new migration on format "YmdHis"',
+                'migration create [<short_name>]'                          => 'Create new migration on format "YmdHis" with short name if needed',
                 'migration migrate [<migration>]'           =>
                     'Execute a migration to a specified version or the latest available version.',
                 'migration execute <migration> --up|--down' =>
