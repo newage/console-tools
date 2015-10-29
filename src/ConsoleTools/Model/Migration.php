@@ -53,10 +53,10 @@ class Migration
     public function createTable()
     {
         $sql = "
-            CREATE TABLE IF NOT EXISTS `".self::TABLE."`(
+            CREATE TABLE IF NOT EXISTS `" . self::TABLE . "`(
                 `migration` VARCHAR(20) NOT NULL,
-                `up` VARCHAR(1000) NOT NULL,
-                `down` VARCHAR(1000) NOT NULL
+                `up` text NOT NULL,
+                `down` text NOT NULL
             ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
         ";
 
