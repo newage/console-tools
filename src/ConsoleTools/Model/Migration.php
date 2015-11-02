@@ -53,7 +53,9 @@ class Migration
     public function createTable()
     {
         $table = new Ddl\CreateTable(self::TABLE);
-        $table->addColumn(new Ddl\Column\Char('migration', 20));
+        $table->addColumn(new Ddl\Column\Char('migration', 255));
+        $table->addColumn(new Ddl\Column\Text('up'));
+        $table->addColumn(new Ddl\Column\Text('down'));
 
         $sql = new Sql($this->adapter);
         $queryString = $sql->getSqlStringForSqlObject($table);

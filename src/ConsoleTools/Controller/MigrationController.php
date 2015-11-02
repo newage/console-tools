@@ -114,9 +114,6 @@ class MigrationController extends AbstractActionController
         }
         $request = $this->getRequest();
         $short_name = $request->getParam('short_name', '');
-        if (!empty($short_name) && !preg_match('/^[a-z][a-z0-9-_]+$/', $short_name)) {
-            throw new RuntimeException('Name should start from latin letter and can contains only letters and numbers');
-        }
 
         $config = $this->getServiceLocator()->get('Config');
         if (isset($config['console-tools']['migration_template'])) {
@@ -267,7 +264,8 @@ EOD;
     protected function getMigrationFolder()
     {
         if ($this->migrationFolder === null) {
-            $this->migrationFolder = getcwd() . self::FOLDER_MIGRATIONS;
+            $config = $this->getServiceLocator()->get('config');
+            $this->migrationFolder = realpath(getcwd() . '/' . $config['console-tools']['migration_folder']) . '/';
         }
 
         return $this->migrationFolder;

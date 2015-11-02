@@ -8,6 +8,6 @@ return array(
             'schema' => true
         ),
         'migration_template' => 'Ymd_Hisu',
-        'migration_folder' => 'data/migration'
+        'migration_folder' => 'build/migration'
     )
 );
