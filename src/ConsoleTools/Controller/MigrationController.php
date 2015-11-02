@@ -120,11 +120,7 @@ class MigrationController extends AbstractActionController
             mkdir($migrationPath, 0777);
         }
 
-        $timeZone = new \DateTimeZone('Europe/Kiev');
-        $t = microtime(true);
-        $micro = sprintf("%06d",($t - floor($t)) * 1000000);
-        $date = new \DateTime( date('Y-m-d H:i:s.'.$micro,$t) );
-        $date->setTimezone($timeZone);
+        $date = new \DateTime();
         if ($short_name) {
             $short_name = '_' . $short_name;
         }
@@ -258,7 +254,7 @@ EOD;
     {
         if ($this->migrationFolder === null) {
             $config = $this->getServiceLocator()->get('config');
-            $this->migrationFolder = realpath(getcwd() . '/' . $config['console-tools']['migration_folder']) . '/';
+            $this->migrationFolder = getcwd() . '/' . $config['console-tools']['migration_folder'] . '/';
         }
 
         return $this->migrationFolder;

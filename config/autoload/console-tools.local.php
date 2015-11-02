@@ -7,7 +7,7 @@ return array(
             'fixtures' => true,
             'schema' => true
         ),
-        'migration_template' => 'Ymd_Hisu',
-        'migration_folder' => 'build/migration'
+        'migration_template' => 'Y:m:d-H:i:s',
+        'migration_folder' => 'build/migrations'
     )
 );
