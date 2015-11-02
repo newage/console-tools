@@ -1,0 +1,32 @@
+<phpunit bootstrap="./tests/bootstrap.php"
+         colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         stopOnFailure="false"
+         syntaxCheck="true">
+
+    <testsuites>
+        <testsuite name="Application Test Suite">
+            <directory>./tests/Model</directory>
+        </testsuite>
+    </testsuites>
+
+    <filter>
+        <blacklist>
+            <directory suffix=".php">./tests</directory>
+            <directory suffix=".php">./vendor</directory>
+            <directory suffix=".php">./src/ConsoleTools/Controller</directory>
+            <file>./src/ConsoleTools/Module.php</file>
+        </blacklist>
+        <whitelist addUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src/ConsoleTools/Model</directory>
+        </whitelist>
+    </filter>
+
+    <logging>
+        <log type="coverage-html" target="./build/coverage" charset="UTF-8" yui="true" highlight="true" lowUpperBound="90" highLowerBound="100"/>
+        <log type="coverage-clover" target="./build/logs/clover.xml"/>
+    </logging>
+
+</phpunit>

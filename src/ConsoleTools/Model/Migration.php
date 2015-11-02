@@ -3,9 +3,9 @@
 namespace ConsoleTools\Model;
 
 use Zend\Db\Adapter\Adapter;
-use Zend\Db\Sql\Insert;
-use Zend\Db\Sql\Select;
+use Zend\Db\Sql\Expression;
 use Zend\Db\Sql\Sql;
+use Zend\Db\Sql\Ddl;
 
 /**
  * Generate class and methods for new migration
@@ -52,15 +52,14 @@ class Migration
      */
     public function createTable()
     {
-        $sql = "
-            CREATE TABLE IF NOT EXISTS `".self::TABLE."`(
-                `migration` VARCHAR(20) NOT NULL,
-                `up` VARCHAR(1000) NOT NULL,
-                `down` VARCHAR(1000) NOT NULL
-            ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-        ";
+        $table = new Ddl\CreateTable(self::TABLE);
+        $table->addColumn(new Ddl\Column\Char('migration', 255));
+        $table->addColumn(new Ddl\Column\Text('up'));
+        $table->addColumn(new Ddl\Column\Text('down'));
 
-        $this->adapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
+        $sql = new Sql($this->adapter);
+        $queryString = $sql->getSqlStringForSqlObject($table);
+        $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
     }
 
     /**
@@ -72,10 +71,9 @@ class Migration
     public function last($isShow = false)
     {
         $sql = new Sql($this->adapter);
-        $select = $sql->select();
-        $select->from(self::TABLE);
+        $select = $sql->select(self::TABLE);
         $select->columns(array(
-            'last' => new \Zend\Db\Sql\Expression('MAX(migration)'),
+            'last' => new Expression('MAX(migration)'),
             'up',
             'down'
         ));
@@ -121,6 +119,7 @@ class Migration
     public function upgrade($migrationName, array $migrationArray)
     {
         $connection = $this->adapter->getDriver()->getConnection();
+
         try {
             $connection->beginTransaction();
 
@@ -139,8 +138,8 @@ class Migration
                 'up' => $migrationArray['up'],
                 'down' => $migrationArray['down']
             ));
-            $selectString = $sql->getSqlStringForSqlObject($insert);
-            $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+            $queryString = $sql->getSqlStringForSqlObject($insert);
+            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
 
             $connection->commit();
         } catch (\Exception $exception) {
@@ -160,14 +159,19 @@ class Migration
     public function downgrade($migrationName, array $migrationArray)
     {
         $connection = $this->adapter->getDriver()->getConnection();
+
         try {
             $connection->beginTransaction();
 
             $query = $migrationArray['down'];
             $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
 
-            $query = 'DELETE FROM `'.self::TABLE.'` WHERE migration = "'.$migrationName.'"';
-            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            $sql = new Sql($this->adapter);
+            $delete = $sql->delete(self::TABLE);
+            $delete->where(array('migration' => $migrationName));
+
+            $queryString = $sql->getSqlStringForSqlObject($delete);
+            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
 
             $connection->commit();
         } catch(\Exception $exception) {

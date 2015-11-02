@@ -2,8 +2,13 @@
 
 namespace ApplicationTest\Model;
 
+use PHPUnit_Framework_TestCase;
 
-class MigrationTest
+class MigrationTest extends PHPUnit_Framework_TestCase
 {
 
+    public function testExecuteUp()
+    {
+        $this->assertTrue(true);
+    }
 }

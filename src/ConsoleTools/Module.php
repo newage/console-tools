@@ -23,7 +23,15 @@ class Module implements
 {
     
     protected $config = null;
-    
+
+    public function onBootstrap(MvcEvent $e)
+    {
+        $this->config        = $e->getApplication()->getServiceManager()->get('config');
+        $eventManager        = $e->getApplication()->getEventManager();
+        $moduleRouteListener = new ModuleRouteListener();
+        $moduleRouteListener->attach($eventManager);
+    }
+
     /**
      * Create documentation for console usage that module
      * 
@@ -43,7 +51,7 @@ class Module implements
         if ($this->config['console-tools']['enable']['migrations']) {
             $docs = array_merge($docs, array(
                 'Migrations:',
-                'migration create'                          => 'Create new migration on format "YmdHis"',
+                'migration create [<short_name>]'                          => 'Create new migration on format "YmdHis" with short name if needed',
                 'migration migrate [<migration>]'           =>
                     'Execute a migration to a specified version or the latest available version.',
                 'migration execute <migration> --up|--down' =>
@@ -66,14 +74,6 @@ class Module implements
         
         return $docs;
     }
-    
-    public function onBootstrap(MvcEvent $e)
-    {
-        $this->config        = $e->getApplication()->getServiceManager()->get('config');
-        $eventManager        = $e->getApplication()->getEventManager();
-        $moduleRouteListener = new ModuleRouteListener();
-        $moduleRouteListener->attach($eventManager);
-    }
 
     public function getConfig()
     {
@@ -83,7 +83,7 @@ class Module implements
         if ($this->config['console-tools']['enable']['schema'] === false) {
             unset($config['console']['router']['routes']['schema-clean']);
         }
-        
+
         /* Remove migrations routes */
         if ($this->config['console-tools']['enable']['migrations'] === false) {
             unset($config['console']['router']['routes']['migration-create']);
@@ -91,12 +91,12 @@ class Module implements
             unset($config['console']['router']['routes']['migration-execute']);
             unset($config['console']['router']['routes']['migration-last']);
         }
-        
+
         /* Remove fixtures routes */
         if ($this->config['console-tools']['enable']['fixtures'] === false) {
             unset($config['console']['router']['routes']['fixture-apply']);
         }
-        
+
         return $config;
     }
 

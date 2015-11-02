@@ -22,7 +22,7 @@ return array(
                 ),
                 'migration-create' => array(
                     'options' => array(
-                        'route'    => 'migration create',
+                        'route'    => 'migration create [<short_name>]',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'create'
@@ -49,7 +49,7 @@ return array(
                 ),
                 'migration-last' => array(
                     'options' => array(
-                        'route'    => 'migration last (--show)',
+                        'route'    => 'migration last',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'last'
