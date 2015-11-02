@@ -52,14 +52,21 @@ class Migration
      */
     public function createTable()
     {
-        $table = new Ddl\CreateTable(self::TABLE);
-        $table->addColumn(new Ddl\Column\Char('migration', 255));
-        $table->addColumn(new Ddl\Column\Text('up'));
-        $table->addColumn(new Ddl\Column\Text('down'));
-
         $sql = new Sql($this->adapter);
-        $queryString = $sql->getSqlStringForSqlObject($table);
-        $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+
+        try {
+            $select = $sql->select(self::TABLE);
+            $queryString = $sql->getSqlStringForSqlObject($select);
+            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+        } catch (\Exception $err) {
+            $table = new Ddl\CreateTable(self::TABLE);
+            $table->addColumn(new Ddl\Column\Char('migration', 255));
+            $table->addColumn(new Ddl\Column\Text('up'));
+            $table->addColumn(new Ddl\Column\Text('down'));
+
+            $queryString = $sql->getSqlStringForSqlObject($table);
+            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+        }
     }
 
     /**
@@ -119,10 +126,9 @@ class Migration
     public function upgrade($migrationName, array $migrationArray)
     {
         $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
 
         try {
-            $connection->beginTransaction();
-
             $queries = explode(';', $migrationArray['up']);
             foreach ($queries as $query) {
                 if (trim($query) == '') {
