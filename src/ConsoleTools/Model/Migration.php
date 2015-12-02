@@ -6,6 +6,7 @@ use Zend\Db\Adapter\Adapter;
 use Zend\Db\Sql\Expression;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Ddl;
+use Zend\Console\Prompt\Confirm;
 
 /**
  * Generate class and methods for new migration
@@ -219,7 +220,13 @@ class Migration
         foreach ($queries as $query) {
             $query = trim($query);
             if (!empty($query)) {
-                $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
+                    $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
+                    $connection = $this->adapter->getDriver()->getConnection();
+                    $connection->rollback();
+                    exit;
+                }
             }
         }
     }
