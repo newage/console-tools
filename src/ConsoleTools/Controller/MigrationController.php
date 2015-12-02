@@ -7,7 +7,7 @@ use Zend\Console\ColorInterface as Color;
 use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\Exception\RuntimeException;
 use ConsoleTools\Model\Migration;
-use Zend\Console\Prompt\Confirm;
+use Zend\Console\Prompt\Char;
 
 /**
  * Controller for console operations as create, upgrate and current migrations
@@ -48,9 +48,9 @@ class MigrationController extends AbstractActionController
         } else {
             $migrationArray = include $filePath;
 
-            if ($request->getParam('up')) {
+            if ($request->getParam(self::UPGRADE_KEY)) {
                 $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
-            } elseif ($request->getParam('down')) {
+            } elseif ($request->getParam(self::DOWNGRADE_KEY)) {
                 $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
             }
         }
@@ -77,17 +77,35 @@ class MigrationController extends AbstractActionController
         $console->write('Current migration: ');
         $console->writeLine($this->getMigrationFolder() . $migration . '.php', Color::YELLOW);
         $console->writeLine($migrationArray[$action], Color::BLUE);
-
-        if (Confirm::prompt('Apply this migration? [y/n]', 'y', 'n')) {
-            $model->$methodName($migration, $migrationArray);
-            if ($action == self::UPGRADE_KEY) {
-                $console->writeLine('This migration successful upgraded', Color::GREEN);
-            } else {
-                $console->writeLine('This migration successful downgraded', Color::GREEN);
-            }
-        } else {
-            $console->writeLine('This migration discarded', Color::RED);
-            return false;
+        $exist = $model->get(array('migration' => $migration));
+        if (!empty($exist) && empty($exist['ignored'])) {
+            $console->writeLine('This migration was already executed', Color::YELLOW);
+        } elseif (!empty($exist) && !empty($exist['ignored'])) {
+            $console->writeLine('This migration was already pseudo-executed (ignored)', Color::LIGHT_CYAN);
+        }
+        $answer = Char::prompt('Apply this migration (Yes / no / ignore forever)? [y/n/i]', 'yni');
+        switch ($answer) {
+            case 'y':
+                $model->$methodName($migration, $migrationArray);
+                if ($action == self::UPGRADE_KEY) {
+                    $console->writeLine('This migration successful upgraded', Color::GREEN);
+                } else {
+                    $console->writeLine('This migration successful downgraded', Color::GREEN);
+                }
+            break;
+            case 'i':
+                $model->$methodName($migration, $migrationArray, $ignore = true);
+                if ($action == self::UPGRADE_KEY) {
+                    $console->writeLine('This migration pseudo-upgraded', Color::LIGHT_CYAN);
+                } else {
+                    $console->writeLine('This migration pseudo-downgraded', Color::LIGHT_CYAN);
+                }
+            break;
+            case 'n':
+            default:
+                $console->writeLine('This migration discarded', Color::RED);
+                return false;
+            break;
         }
 
         return true;

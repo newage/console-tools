@@ -64,6 +64,7 @@ class Migration
             $table->addColumn(new Ddl\Column\Char('migration', 255));
             $table->addColumn(new Ddl\Column\Text('up'));
             $table->addColumn(new Ddl\Column\Text('down'));
+            $table->addColumn(new Ddl\Column\Integer('ignored', false, 0, array('length' => 1)));
 
             $table->addConstraint(new Ddl\Constraint\PrimaryKey('id'));
             $table->addConstraint(new Ddl\Constraint\UniqueKey(['migration'], 'unique_key'));
@@ -85,12 +86,31 @@ class Migration
         $select->columns(array(
             'last' => new Expression('MAX(id)'),
             'up',
-            'down'
+            'down',
+            'ignored'
         ));
         
         $selectString = $sql->getSqlStringForSqlObject($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
+        return $results->current();
+    }
+    /**
+     * Get a last migration
+     *
+     * @param bool $isShow Show sql queries
+     * @return string
+     */
+    public function get(array $where = [])
+    {
+        $sql = new Sql($this->adapter);
+        $select = $sql->select(self::TABLE);
+        $select->columns(array('*'));
+        $select->where($where);
+
+        $selectString = $sql->getSqlStringForSqlObject($select);
+        $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+
         return $results->current();
     }
     
@@ -124,20 +144,18 @@ class Migration
      *
      * @param string $migrationName
      * @param array $migrationArray
+     * @param bool $ignore
      * @throws \Exception
+     * @internal param bool $ig
      */
-    public function upgrade($migrationName, array $migrationArray)
+    public function upgrade($migrationName, array $migrationArray, $ignore = false)
     {
         $connection = $this->adapter->getDriver()->getConnection();
         $connection->beginTransaction();
 
         try {
-            $queries = explode(';', $migrationArray['up']);
-            foreach ($queries as $query) {
-                if (trim($query) == '') {
-                    continue;
-                }
-                $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            if (!$ignore) {
+                $this->executeQueriesOneByOne($migrationArray['up']);
             }
 
             $sql = new Sql($this->adapter);
@@ -145,7 +163,8 @@ class Migration
             $insert->values(array(
                 'migration' => $migrationName,
                 'up' => $migrationArray['up'],
-                'down' => $migrationArray['down']
+                'down' => $migrationArray['down'],
+                'ignore' => (int)$ignore,
             ));
             $queryString = $sql->getSqlStringForSqlObject($insert);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
@@ -163,17 +182,19 @@ class Migration
      *
      * @param string $migrationName
      * @param array $migrationArray
+     * @param bool $ignore
      * @throws \Exception
      */
-    public function downgrade($migrationName, array $migrationArray)
+    public function downgrade($migrationName, array $migrationArray, $ignore = false)
     {
         $connection = $this->adapter->getDriver()->getConnection();
 
         try {
             $connection->beginTransaction();
 
-            $query = $migrationArray['down'];
-            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            if (!$ignore) {
+                $this->executeQueriesOneByOne($migrationArray['down']);
+            }
 
             $sql = new Sql($this->adapter);
             $delete = $sql->delete(self::TABLE);
@@ -186,6 +207,20 @@ class Migration
         } catch(\Exception $exception) {
             $connection->rollback();
             throw new \Exception($exception->getMessage());
+        }
+    }
+
+    /**
+     * @param string $migration
+     */
+    protected function executeQueriesOneByOne($migration = '')
+    {
+        $queries = explode(';', $migration);
+        foreach ($queries as $query) {
+            $query = trim($query);
+            if (!empty($query)) {
+                $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            }
         }
     }
 }
