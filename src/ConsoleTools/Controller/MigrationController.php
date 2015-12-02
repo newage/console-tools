@@ -77,7 +77,12 @@ class MigrationController extends AbstractActionController
         $console->write('Current migration: ');
         $console->writeLine($this->getMigrationFolder() . $migration . '.php', Color::YELLOW);
         $console->writeLine($migrationArray[$action], Color::BLUE);
-
+        $exist = $model->get(array('migration' => $migration));
+        if (!empty($exist) && empty($exist['ignored'])) {
+            $console->writeLine('This migration was already executed', Color::YELLOW);
+        } elseif (!empty($exist) && !empty($exist['ignored'])) {
+            $console->writeLine('This migration was already pseudo-executed (ignored)', Color::LIGHT_CYAN);
+        }
         $answer = Char::prompt('Apply this migration (Yes / no / ignore forever)? [y/n/i]', 'yni');
         switch ($answer) {
             case 'y':

@@ -92,6 +92,24 @@ class Migration
         
         return $results->current();
     }
+    /**
+     * Get a last migration
+     *
+     * @param bool $isShow Show sql queries
+     * @return string
+     */
+    public function get(array $where = [])
+    {
+        $sql = new Sql($this->adapter);
+        $select = $sql->select(self::TABLE);
+        $select->columns(array('*'));
+        $select->where($where);
+
+        $selectString = $sql->getSqlStringForSqlObject($select);
+        $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+
+        return $results->current();
+    }
     
     /**
      * Get applied a migrations name
