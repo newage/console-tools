@@ -65,7 +65,6 @@ class Migration
             $table->addColumn(new Ddl\Column\Text('up'));
             $table->addColumn(new Ddl\Column\Text('down'));
             $table->addColumn(new Ddl\Column\Integer('ignored', false, 0, array('length' => 1)));
-            $table->addConstraint(new Ddl\Constraint\PrimaryKey(array('migration'), 'migration'));
 
             $table->addConstraint(new Ddl\Constraint\PrimaryKey('id'));
             $table->addConstraint(new Ddl\Constraint\UniqueKey(['migration'], 'unique_key'));
