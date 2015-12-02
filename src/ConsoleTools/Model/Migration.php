@@ -64,7 +64,7 @@ class Migration
             $table->addColumn(new Ddl\Column\Text('up'));
             $table->addColumn(new Ddl\Column\Text('down'));
             $table->addColumn(new Ddl\Column\Integer('ignored', false, 0, array('length' => 1)));
-
+            $table->addConstraint(new Ddl\Constraint\PrimaryKey(array('migration'), 'migration'));
             $queryString = $sql->getSqlStringForSqlObject($table);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         }
