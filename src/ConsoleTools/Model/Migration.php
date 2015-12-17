@@ -145,30 +145,32 @@ class Migration
      *
      * @param string $migrationName
      * @param array $migrationArray
-     * @param bool $ignore
+     * @param bool $ignoreMigration
+     * @param bool $doNotSaveAsExecuted
      * @throws \Exception
      * @internal param bool $ig
      */
-    public function upgrade($migrationName, array $migrationArray, $ignore = false)
+    public function upgrade($migrationName, array $migrationArray, $ignoreMigration = false, $doNotSaveAsExecuted = false)
     {
         $connection = $this->adapter->getDriver()->getConnection();
         $connection->beginTransaction();
 
         try {
-            if (!$ignore) {
+            if (!$ignoreMigration) {
                 $this->executeQueriesOneByOne($migrationArray['up']);
             }
-
-            $sql = new Sql($this->adapter);
-            $insert = $sql->insert(self::TABLE);
-            $insert->values(array(
-                'migration' => $migrationName,
-                'up' => $migrationArray['up'],
-                'down' => $migrationArray['down'],
-                'ignore' => (int)$ignore,
-            ));
-            $queryString = $sql->getSqlStringForSqlObject($insert);
-            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+            if (!$doNotSaveAsExecuted) {
+                $sql = new Sql($this->adapter);
+                $insert = $sql->insert(self::TABLE);
+                $insert->values(array(
+                    'migration' => $migrationName,
+                    'up' => $migrationArray['up'],
+                    'down' => $migrationArray['down'],
+                    'ignore' => (int)$ignoreMigration,
+                ));
+                $queryString = $sql->getSqlStringForSqlObject($insert);
+                $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+            }
 
             $connection->commit();
         } catch (\Exception $exception) {
