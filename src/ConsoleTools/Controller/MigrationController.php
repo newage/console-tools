@@ -46,7 +46,7 @@ class MigrationController extends AbstractActionController
         if (!file_exists($filePath)) {
             $console->writeLine('Migration does not exists: ' . $filePath, Color::RED);
         } else {
-            $migrationArray = include $filePath;
+            $migrationArray = $this->includeMigration($filePath);
 
             if ($request->getParam(self::UPGRADE_KEY)) {
                 $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
@@ -209,8 +209,8 @@ EOD;
         foreach ($files as $migration) {
             $migrationPath = $migrationFolderPath .
                 DIRECTORY_SEPARATOR . $migration . '.php';
-            
-            $migrationArray = include $migrationPath;
+
+            $migrationArray = $this->includeMigration($migrationPath);
 
             try {
                 switch ($upgradeAction) {
@@ -276,5 +276,16 @@ EOD;
         }
 
         return $this->migrationFolder;
+    }
+
+    /**
+     * @param $migrationPath
+     * @return mixed
+     */
+    protected function includeMigration($migrationPath)
+    {
+        $migrationArray = include $migrationPath;
+
+        return $migrationArray;
     }
 }
