@@ -6,6 +6,7 @@ use Zend\Db\Adapter\Adapter;
 use Zend\Db\Sql\Expression;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Ddl;
+use Zend\Console\Prompt\Confirm;
 
 /**
  * Generate class and methods for new migration
@@ -60,9 +61,14 @@ class Migration
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         } catch (\Exception $err) {
             $table = new Ddl\CreateTable(self::TABLE);
+            $table->addColumn(new Ddl\Column\Integer('id'));
             $table->addColumn(new Ddl\Column\Char('migration', 255));
             $table->addColumn(new Ddl\Column\Text('up'));
             $table->addColumn(new Ddl\Column\Text('down'));
+            $table->addColumn(new Ddl\Column\Integer('ignored', false, 0, array('length' => 1)));
+
+            $table->addConstraint(new Ddl\Constraint\PrimaryKey('id'));
+            $table->addConstraint(new Ddl\Constraint\UniqueKey(['migration'], 'unique_key'));
 
             $queryString = $sql->getSqlStringForSqlObject($table);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
@@ -72,22 +78,40 @@ class Migration
     /**
      * Get a last migration
      *
-     * @param bool $isShow Show sql queries
      * @return string
      */
-    public function last($isShow = false)
+    public function last()
     {
         $sql = new Sql($this->adapter);
         $select = $sql->select(self::TABLE);
         $select->columns(array(
-            'last' => new Expression('MAX(migration)'),
+            'last' => new Expression('MAX(id)'),
             'up',
-            'down'
+            'down',
+            'ignored'
         ));
         
         $selectString = $sql->getSqlStringForSqlObject($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
         
+        return $results->current();
+    }
+    /**
+     * Get a last migration
+     *
+     * @param bool $isShow Show sql queries
+     * @return string
+     */
+    public function get(array $where = [])
+    {
+        $sql = new Sql($this->adapter);
+        $select = $sql->select(self::TABLE);
+        $select->columns(array('*'));
+        $select->where($where);
+
+        $selectString = $sql->getSqlStringForSqlObject($select);
+        $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+
         return $results->current();
     }
     
@@ -121,31 +145,32 @@ class Migration
      *
      * @param string $migrationName
      * @param array $migrationArray
+     * @param bool $ignoreMigration
+     * @param bool $doNotSaveAsExecuted
      * @throws \Exception
+     * @internal param bool $ig
      */
-    public function upgrade($migrationName, array $migrationArray)
+    public function upgrade($migrationName, array $migrationArray, $ignoreMigration = false, $doNotSaveAsExecuted = false)
     {
         $connection = $this->adapter->getDriver()->getConnection();
         $connection->beginTransaction();
 
         try {
-            $queries = explode(';', $migrationArray['up']);
-            foreach ($queries as $query) {
-                if (trim($query) == '') {
-                    continue;
-                }
-                $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            if (!$ignoreMigration) {
+                $this->executeQueriesOneByOne($migrationArray['up']);
             }
-
-            $sql = new Sql($this->adapter);
-            $insert = $sql->insert(self::TABLE);
-            $insert->values(array(
-                'migration' => $migrationName,
-                'up' => $migrationArray['up'],
-                'down' => $migrationArray['down']
-            ));
-            $queryString = $sql->getSqlStringForSqlObject($insert);
-            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+            if (!$doNotSaveAsExecuted) {
+                $sql = new Sql($this->adapter);
+                $insert = $sql->insert(self::TABLE);
+                $insert->values(array(
+                    'migration' => $migrationName,
+                    'up' => $migrationArray['up'],
+                    'down' => $migrationArray['down'],
+                    'ignore' => (int)$ignoreMigration,
+                ));
+                $queryString = $sql->getSqlStringForSqlObject($insert);
+                $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+            }
 
             $connection->commit();
         } catch (\Exception $exception) {
@@ -160,17 +185,19 @@ class Migration
      *
      * @param string $migrationName
      * @param array $migrationArray
+     * @param bool $ignore
      * @throws \Exception
      */
-    public function downgrade($migrationName, array $migrationArray)
+    public function downgrade($migrationName, array $migrationArray, $ignore = false)
     {
         $connection = $this->adapter->getDriver()->getConnection();
 
         try {
             $connection->beginTransaction();
 
-            $query = $migrationArray['down'];
-            $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            if (!$ignore) {
+                $this->executeQueriesOneByOne($migrationArray['down']);
+            }
 
             $sql = new Sql($this->adapter);
             $delete = $sql->delete(self::TABLE);
@@ -183,6 +210,26 @@ class Migration
         } catch(\Exception $exception) {
             $connection->rollback();
             throw new \Exception($exception->getMessage());
+        }
+    }
+
+    /**
+     * @param string $migration
+     */
+    protected function executeQueriesOneByOne($migration = '')
+    {
+        $queries = explode(';', $migration);
+        foreach ($queries as $query) {
+            $query = trim($query);
+            if (!empty($query)) {
+                if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
+                    $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
+                    $connection = $this->adapter->getDriver()->getConnection();
+                    $connection->rollback();
+                    exit;
+                }
+            }
         }
     }
 }

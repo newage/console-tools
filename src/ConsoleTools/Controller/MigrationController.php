@@ -7,7 +7,7 @@ use Zend\Console\ColorInterface as Color;
 use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\Exception\RuntimeException;
 use ConsoleTools\Model\Migration;
-use Zend\Console\Prompt\Confirm;
+use Zend\Console\Prompt\Char;
 
 /**
  * Controller for console operations as create, upgrate and current migrations
@@ -46,11 +46,11 @@ class MigrationController extends AbstractActionController
         if (!file_exists($filePath)) {
             $console->writeLine('Migration does not exists: ' . $filePath, Color::RED);
         } else {
-            $migrationArray = include $filePath;
+            $migrationArray = $this->includeMigration($filePath);
 
-            if ($request->getParam('up')) {
+            if ($request->getParam(self::UPGRADE_KEY)) {
                 $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
-            } elseif ($request->getParam('down')) {
+            } elseif ($request->getParam(self::DOWNGRADE_KEY)) {
                 $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
             }
         }
@@ -77,17 +77,38 @@ class MigrationController extends AbstractActionController
         $console->write('Current migration: ');
         $console->writeLine($this->getMigrationFolder() . $migration . '.php', Color::YELLOW);
         $console->writeLine($migrationArray[$action], Color::BLUE);
-
-        if (Confirm::prompt('Apply this migration? [y/n]', 'y', 'n')) {
-            $model->$methodName($migration, $migrationArray);
-            if ($action == self::UPGRADE_KEY) {
-                $console->writeLine('This migration successful upgraded', Color::GREEN);
-            } else {
-                $console->writeLine('This migration successful downgraded', Color::GREEN);
-            }
-        } else {
-            $console->writeLine('This migration discarded', Color::RED);
-            return false;
+        $exist = $model->get(array('migration' => $migration));
+        $doNotSaveAsExecuted = false;
+        if (!empty($exist) && empty($exist['ignored'])) {
+            $console->writeLine('This migration was already executed', Color::YELLOW);
+            $doNotSaveAsExecuted = true;
+        } elseif (!empty($exist) && !empty($exist['ignored'])) {
+            $console->writeLine('This migration was already pseudo-executed (ignored)', Color::LIGHT_CYAN);
+        }
+        $answer = Char::prompt('Apply this migration (Yes / no / ignore forever)? [y/n/i]', 'yni');
+        switch ($answer) {
+            case 'y':
+                if ($action == self::UPGRADE_KEY) {
+                    $model->$methodName($migration, $migrationArray, $ignore = false, $doNotSaveAsExecuted);
+                    $console->writeLine('This migration successful upgraded', Color::GREEN);
+                } else {
+                    $model->$methodName($migration, $migrationArray, $ignore = false);
+                    $console->writeLine('This migration successful downgraded', Color::GREEN);
+                }
+            break;
+            case 'i':
+                $model->$methodName($migration, $migrationArray, $ignore = true);
+                if ($action == self::UPGRADE_KEY) {
+                    $console->writeLine('This migration pseudo-upgraded', Color::LIGHT_CYAN);
+                } else {
+                    $console->writeLine('This migration pseudo-downgraded', Color::LIGHT_CYAN);
+                }
+            break;
+            case 'n':
+            default:
+                $console->writeLine('This migration discarded', Color::RED);
+                return false;
+            break;
         }
 
         return true;
@@ -120,11 +141,7 @@ class MigrationController extends AbstractActionController
             mkdir($migrationPath, 0777);
         }
 
-        $timeZone = new \DateTimeZone('Europe/Kiev');
-        $t = microtime(true);
-        $micro = sprintf("%06d",($t - floor($t)) * 1000000);
-        $date = new \DateTime( date('Y-m-d H:i:s.'.$micro,$t) );
-        $date->setTimezone($timeZone);
+        $date = new \DateTime();
         if ($short_name) {
             $short_name = '_' . $short_name;
         }
@@ -195,8 +212,8 @@ EOD;
         foreach ($files as $migration) {
             $migrationPath = $migrationFolderPath .
                 DIRECTORY_SEPARATOR . $migration . '.php';
-            
-            $migrationArray = include $migrationPath;
+
+            $migrationArray = $this->includeMigration($migrationPath);
 
             try {
                 switch ($upgradeAction) {
@@ -258,9 +275,20 @@ EOD;
     {
         if ($this->migrationFolder === null) {
             $config = $this->getServiceLocator()->get('config');
-            $this->migrationFolder = realpath(getcwd() . '/' . $config['console-tools']['migration_folder']) . '/';
+            $this->migrationFolder = getcwd() . '/' . $config['console-tools']['migration_folder'] . '/';
         }
 
         return $this->migrationFolder;
+    }
+
+    /**
+     * @param $migrationPath
+     * @return mixed
+     */
+    protected function includeMigration($migrationPath)
+    {
+        $migrationArray = include $migrationPath;
+
+        return $migrationArray;
     }
 }
