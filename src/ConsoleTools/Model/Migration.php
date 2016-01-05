@@ -218,7 +218,7 @@ class Migration
      */
     protected function executeQueriesOneByOne($migration = '')
     {
-        $queries = explode(';', $migration);
+        $queries = explode(';' . PHP_EOL, $migration);
         foreach ($queries as $query) {
             $query = trim($query);
             if (!empty($query)) {
