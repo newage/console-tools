@@ -2,6 +2,7 @@
 
 namespace ConsoleTools\Controller;
 
+use Zend\Db\Adapter\Adapter;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Console\ColorInterface as Color;
 use Zend\Console\Adapter\AdapterInterface as Console;
@@ -46,6 +47,10 @@ class MigrationController extends AbstractActionController
         if (!file_exists($filePath)) {
             $console->writeLine('Migration does not exists: ' . $filePath, Color::RED);
         } else {
+            if (!$this->isApplySchema($console)) {
+                false;
+            }
+
             $migrationArray = $this->includeMigration($filePath);
 
             if ($request->getParam(self::UPGRADE_KEY)) {
@@ -151,10 +156,11 @@ class MigrationController extends AbstractActionController
         $migrationContent = <<<EOD
 <?php
         
-return array(
+return [
     'up' => "",
     'down' => ""
-);
+];
+
 EOD;
         
         file_put_contents($migrationPath . $migrationName, $migrationContent);
@@ -181,7 +187,11 @@ EOD;
         $migrationsFromBase  = $model->applied();
         $migrationFolderPath = $this->getMigrationFolder();
         $files               = array();
-        
+
+        if (!$this->isApplySchema($console, $adapter)) {
+            false;
+        }
+
         if ($toMigration == 'all') {
             $filesDirty = scandir($migrationFolderPath);
             for ($i=0; $i<count($filesDirty); $i++) {
@@ -201,12 +211,12 @@ EOD;
             $upgradeAction = self::DOWNGRADE_KEY;
         } else {
             $console->writeLine('Did not apply the migration: ' . $toMigration, Color::RED);
-            return;
+            return false;
         }
         
         if (!count($files)) {
             $console->writeLine('You have last version of database', Color::GREEN);
-            return;
+            return false;
         }
         
         foreach ($files as $migration) {
@@ -233,11 +243,11 @@ EOD;
             } catch (\Exception $err) {
                 $console->writeLine('Current migration failed commit', Color::RED);
                 $console->writeLine($err->getMessage(), Color::RED);
-                return;
+                return false;
             }
         }
     }
-    
+
     /**
      * Show last applied migration number
      * 
@@ -265,7 +275,29 @@ EOD;
             $console->writeLine('Last applied the migration: ' . $migrationName, Color::GREEN);
         }
     }
-    
+
+    /**
+     * @param Console|null $console
+     * @param Adapter|null $adapter
+     * @return bool
+     */
+    protected function isApplySchema(Console $console = null, Adapter $adapter = null)
+    {
+        if ($console === null) {
+            $console = $this->getServiceLocator()->get('console');
+        }
+        if ($adapter === null) {
+            $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        }
+
+        $console->writeLine('Current schema: '.$adapter->getCurrentSchema(), Color::GREEN);
+        $answer = Char::prompt('The schema is correct (Yes/No)? [y/n]', 'yn');
+        if ($answer == 'n') {
+            return false;
+        }
+        return true;
+    }
+
     /**
      * Get migration folder from config file
      *
