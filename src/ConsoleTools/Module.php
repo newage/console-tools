@@ -52,15 +52,16 @@ class Module implements
             $docs = array_merge($docs, array(
                 'Migrations:',
                 'migration create [<short_name>]'           => 'Create new migration on format "YmdHis" with short name if needed',
-                'migration migrate [<migration>]'           =>
+                'migration migrate [<migration>] [--percona]' =>
                     'Execute a migration to a specified version or the latest available version.',
-                'migration execute <migration> --up|--down' =>
+                'migration execute <migration> --up|--down [--percona]' =>
                     'Execute a single migration version up or down manually.',
                 'migration last --show'                     => 'Show last applied migration number',
                 array('<migration>'                          , 'Number of migration'),
                 array('--up'                                 , 'Execute action up of one migration'),
                 array('--down'                               , 'Execute action down of one migration'),
                 array('--show'                               , 'Show sql code for last migration'),
+                array('--percona'                            , 'Executing ALTER TABLE use percona tool'),
             ));
         }
         

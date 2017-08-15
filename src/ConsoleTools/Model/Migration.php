@@ -7,6 +7,8 @@ use Zend\Db\Sql\Expression;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Ddl;
 use Zend\Console\Prompt\Confirm;
+use Zend\ServiceManager\ServiceLocatorAwareTrait;
+use Zend\ServiceManager\ServiceLocatorInterface;
 
 /**
  * Generate class and methods for new migration
@@ -18,37 +20,45 @@ use Zend\Console\Prompt\Confirm;
  */
 class Migration
 {
-    
+    use ServiceLocatorAwareTrait;
+
     /**
      * Current db adapter
-     * 
+     *
      * @var Adapter
      */
     protected $adapter = null;
-    
+
+    /**
+     * @var bool
+     */
+    protected $percona = false;
+
     /**
      * Migration table name of database
-     * 
+     *
      * @var string
      */
     const TABLE = 'migrations';
-    
+
     /**
      * Constructor
      * Create migration table
      * Set current db adapter
-     * 
+     *
      * @param \Zend\Db\Adapter\Adapter $adapter
      */
-    public function __construct($adapter = null)
+    public function __construct($adapter = null, ServiceLocatorInterface $serviceLocator, $percona)
     {
         $this->adapter = $adapter;
+        $this->percona = $percona;
         $this->createTable();
+        $this->setServiceLocator($serviceLocator);
     }
-    
+
     /**
      * Create a migration table
-     * 
+     *
      * @return bool
      */
     public function createTable()
@@ -90,10 +100,10 @@ class Migration
             'down',
             'ignored'
         ));
-        
+
         $selectString = $sql->getSqlStringForSqlObject($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
-        
+
         return $results->current();
     }
     /**
@@ -114,10 +124,10 @@ class Migration
 
         return $results->current();
     }
-    
+
     /**
      * Get applied a migrations name
-     * 
+     *
      * @return array
      */
     public function applied()
@@ -126,16 +136,16 @@ class Migration
         $sql = new Sql($this->adapter);
         $select = $sql->select();
         $select->from(self::TABLE);
-        
+
         $selectString = $sql->getSqlStringForSqlObject($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
-        
+
         if ($results->count() > 0) {
             foreach ($results as $migration) {
                 $migrationFiles[] = $migration->migration;
             }
         }
-            
+
         return $migrationFiles;
     }
 
@@ -218,12 +228,20 @@ class Migration
      */
     protected function executeQueriesOneByOne($migration = '')
     {
+        $config = $this->getServiceLocator()->get('config');
+        if (!isset($config['db'])) {
+            throw new \RuntimeException('Does nto exist `db` config!');
+        }
+        $dbConfig = $config['db'];
+
         $queries = explode(';' . PHP_EOL, $migration);
         foreach ($queries as $query) {
             $query = trim($query);
             if (!empty($query)) {
                 if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
-                    $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                    if ($this->executeInPerconaTool($query, $dbConfig) === false) {
+                        $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                    }
                 } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
                     $connection = $this->adapter->getDriver()->getConnection();
                     $connection->rollback();
@@ -231,5 +249,28 @@ class Migration
                 }
             }
         }
+    }
+
+    protected function executeInPerconaTool($query, $dbConfig): bool
+    {
+        if (stristr($query, 'ALTER TABLE') && $this->percona) {
+            $cleanQuery = str_replace(['`', '\''], '', $query);
+            preg_match('~ALTER TABLE\s([\w\d\_]+)\s(.*);?~smi', $cleanQuery, $matches);
+            if (!isset($matches[1]) || !isset($matches[2])) {
+                return false;
+            }
+            $perconaString = sprintf(
+                'pt-online-schema-change --execute --alter-foreign-keys-method=auto --password=%1$s --user=%2$s --alter "%6$s" D=%3$s,t=%5$s,h=%4$s',
+                $dbConfig['password'],
+                $dbConfig['username'],
+                $dbConfig['database'],
+                $dbConfig['hostname'],
+                $matches[1],
+                $matches[2]
+            );
+            $result = exec($perconaString);
+            return true;
+        }
+        return false;
     }
 }

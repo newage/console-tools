@@ -12,7 +12,7 @@ use Zend\Console\Prompt\Char;
 
 /**
  * Controller for console operations as create, upgrate and current migrations
- * 
+ *
  * @author     V.Leontiev <vadim.leontiev@gmail.com>
  * @license    http://opensource.org/licenses/MIT MIT
  * @since      php 5.3 or higher
@@ -25,14 +25,14 @@ class MigrationController extends AbstractActionController
 
     /**
      * Destination to folder with migration files
-     * 
+     *
      * @var string
      */
     protected $migrationFolder = null;
 
     /**
      * Execute one migration
-     * 
+     *
      */
     public function executeAction()
     {
@@ -40,7 +40,8 @@ class MigrationController extends AbstractActionController
         $console   = $this->getServiceLocator()->get('console');
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
-        
+        $percona = $request->getParam('percona');
+
         $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
 
@@ -54,9 +55,9 @@ class MigrationController extends AbstractActionController
             $migrationArray = $this->includeMigration($filePath);
 
             if ($request->getParam(self::UPGRADE_KEY)) {
-                $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
+                $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona);
             } elseif ($request->getParam(self::DOWNGRADE_KEY)) {
-                $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
+                $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona);
             }
         }
     }
@@ -69,13 +70,13 @@ class MigrationController extends AbstractActionController
      * @param array $migrationArray
      * @return bool
      */
-    protected function applyMigration($action, $migration, $migrationArray)
+    protected function applyMigration($action, $migration, $migrationArray, $percona)
     {
         /* @var $adapter \Zend\Db\Adapter\Adapter */
         /* @var $console Console */
         $adapter    = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $console    = $this->getServiceLocator()->get('console');
-        $model      = new Migration($adapter);
+        $model      = new Migration($adapter, $this->getServiceLocator(), $percona);
         $methodName = $action == self::UPGRADE_KEY ? 'upgrade' : 'downgrade';
 
         $console->writeLine();
@@ -100,7 +101,7 @@ class MigrationController extends AbstractActionController
                     $model->$methodName($migration, $migrationArray, $ignore = false);
                     $console->writeLine('This migration successful downgraded', Color::GREEN);
                 }
-            break;
+                break;
             case 'i':
                 $model->$methodName($migration, $migrationArray, $ignore = true);
                 if ($action == self::UPGRADE_KEY) {
@@ -108,12 +109,12 @@ class MigrationController extends AbstractActionController
                 } else {
                     $console->writeLine('This migration pseudo-downgraded', Color::LIGHT_CYAN);
                 }
-            break;
+                break;
             case 'n':
             default:
                 $console->writeLine('This migration discarded', Color::RED);
                 return false;
-            break;
+                break;
         }
 
         return true;
@@ -121,7 +122,7 @@ class MigrationController extends AbstractActionController
 
     /**
      * Create new migration file
-     * 
+     *
      * @throws RuntimeException
      */
     public function createAction()
@@ -150,9 +151,9 @@ class MigrationController extends AbstractActionController
         if ($short_name) {
             $short_name = '_' . $short_name;
         }
-        
+
         $migrationName = $date->format($dateTemplate) . $short_name . '.php';
-        
+
         $migrationContent = <<<EOD
 <?php
         
@@ -162,15 +163,15 @@ return [
 ];
 
 EOD;
-        
+
         file_put_contents($migrationPath . $migrationName, $migrationContent);
-        
+
         $console->writeLine('Created migration file: ' . $migrationPath . $migrationName, Color::GREEN);
     }
-    
+
     /**
      * Upgrade/downgrade to migration
-     * 
+     *
      * @throws RuntimeException
      */
     public function upgradeAction()
@@ -179,11 +180,12 @@ EOD;
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
-        
+
         $adapter             = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
-        $model               = new Migration($adapter);
         $request             = $this->getRequest();
         $toMigration         = $request->getParam('number', 'all');
+        $percona             = $request->getParam('percona');
+        $model               = new Migration($adapter, $this->getServiceLocator(), $percona);
         $migrationsFromBase  = $model->applied();
         $migrationFolderPath = $this->getMigrationFolder();
         $files               = array();
@@ -213,12 +215,12 @@ EOD;
             $console->writeLine('Did not apply the migration: ' . $toMigration, Color::RED);
             return false;
         }
-        
+
         if (!count($files)) {
             $console->writeLine('You have last version of database', Color::GREEN);
             return false;
         }
-        
+
         foreach ($files as $migration) {
             $migrationPath = $migrationFolderPath .
                 DIRECTORY_SEPARATOR . $migration . '.php';
@@ -229,11 +231,11 @@ EOD;
                 switch ($upgradeAction) {
                     case self::DOWNGRADE_KEY:
                         //downgrade action
-                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray);
+                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona);
                         break;
                     case self::UPGRADE_KEY:
                         //upgrade action
-                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray);
+                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona);
                         break;
                     default:
                         throw new \Exception('Not set action');
@@ -250,7 +252,7 @@ EOD;
 
     /**
      * Show last applied migration number
-     * 
+     *
      */
     public function lastAction()
     {
@@ -261,7 +263,7 @@ EOD;
 
         $request = $this->getRequest();
         $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
-        $model = new Migration($adapter);
+        $model = new Migration($adapter, $this->getServiceLocator());
         $lastMigration = $model->last();
 
         $migrationName = $this->getMigrationFolder() . $lastMigration->last . '.php';
