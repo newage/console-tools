@@ -9,6 +9,7 @@ use Zend\Db\Sql\Ddl;
 use Zend\Console\Prompt\Confirm;
 use Zend\ServiceManager\ServiceLocatorAwareTrait;
 use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\Console\ColorInterface as Color;
 
 /**
  * Generate class and methods for new migration
