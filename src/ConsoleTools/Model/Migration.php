@@ -259,6 +259,8 @@ class Migration
             if (!isset($matches[1]) || !isset($matches[2])) {
                 return false;
             }
+            $console = $this->getServiceLocator()->get('console');
+
             $perconaString = sprintf(
                 'pt-online-schema-change --execute --alter-foreign-keys-method=auto --password=%1$s --user=%2$s --alter "%6$s" D=%3$s,t=%5$s,h=%4$s',
                 $dbConfig['password'],
@@ -268,7 +270,9 @@ class Migration
                 $matches[1],
                 $matches[2]
             );
-            $result = exec($perconaString);
+            $result = shell_exec($perconaString);
+            $console->writeLine('Percona response:', Color::BLUE);
+            $console->writeLine($result, Color::WHITE);
             return true;
         }
         return false;
