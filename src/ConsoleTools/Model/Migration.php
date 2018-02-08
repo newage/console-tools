@@ -229,6 +229,7 @@ class Migration
      */
     protected function executeQueriesOneByOne($migration = '')
     {
+        $console = $this->getServiceLocator()->get('console');
         $config = $this->getServiceLocator()->get('config');
         if (!isset($config['db'])) {
             throw new \RuntimeException('Does nto exist `db` config!');
@@ -242,7 +243,6 @@ class Migration
                 if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
                     if ($this->executeInPerconaTool($query, $dbConfig) === false) {
                         $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
-                        $console = $this->getServiceLocator()->get('console');
                         $console->writeLine('Affected rows: '.$request->count(), Color::BLUE);
                     }
                 } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
