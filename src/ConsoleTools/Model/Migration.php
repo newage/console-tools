@@ -241,7 +241,9 @@ class Migration
             if (!empty($query)) {
                 if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
                     if ($this->executeInPerconaTool($query, $dbConfig) === false) {
-                        $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                        $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+                        $console = $this->getServiceLocator()->get('console');
+                        $console->writeLine('Affected rows: '.$request->count(), Color::BLUE);
                     }
                 } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
                     $connection = $this->adapter->getDriver()->getConnection();
