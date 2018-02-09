@@ -3,6 +3,7 @@
 namespace ConsoleTools\Model;
 
 use Zend\Db\Adapter\Adapter;
+use Zend\Db\ResultSet\ResultSetInterface;
 use Zend\Db\Sql\Expression;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Ddl;
@@ -243,7 +244,9 @@ class Migration
                 if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
                     if ($this->executeInPerconaTool($query, $dbConfig) === false) {
                         $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
-                        $console->writeLine('Affected rows: '.$request->count(), Color::BLUE);
+                        if ($request instanceof ResultSetInterface) {
+                            $console->writeLine('Affected rows: ' . $request->count(), Color::BLUE);
+                        }
                     }
                 } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
                     $connection = $this->adapter->getDriver()->getConnection();
