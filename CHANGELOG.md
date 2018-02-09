@@ -21,6 +21,10 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 ### Security
 - Nothing
 
+## [1.4.4] - 2018-02-09
+### Fixed
+- Checked implementing interface for object
+
 ## [1.4.3] - 2018-02-09
 ### Added
 - Show affected rows after migration
