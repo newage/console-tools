@@ -15,7 +15,7 @@ use Zend\Db\Adapter\Adapter;
  *
  * @author     V.Leontiev <vadim.leontiev@gmail.com>
  * @license    http://opensource.org/licenses/MIT MIT
- * @since      php 5.3 or higher
+ * @since      php 5.6 or higher
  * @see        https://github.com/newage/console-tools
  */
 class SchemaController extends AbstractActionController
