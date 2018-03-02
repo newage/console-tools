@@ -292,7 +292,7 @@ EOD;
             $adapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         }
 
-        $console->writeLine('Current schema: '.$adapter->getCurrentSchema(), Color::GREEN);
+        $console->writeLine('Current DSN: ' . $adapter->getDriver()->getConnection()->getDsn(), Color::GREEN);
         $answer = Char::prompt('The schema is correct (Yes/No)? [y/n]', 'yn');
         if ($answer == 'n') {
             return false;
