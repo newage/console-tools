@@ -41,7 +41,7 @@ class MigrationController extends AbstractActionController
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
         $percona = $request->getParam('percona');
-        $port = $request->getParam('port');//var_dump($port); die();
+        $port = $request->getParam('port');
 
         $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
