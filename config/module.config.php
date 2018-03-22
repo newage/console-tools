@@ -31,7 +31,7 @@ return array(
                 ),
                 'migration-upgrade' => array(
                     'options' => array(
-                        'route'    => 'migration migrate [<number>] [--percona]',
+                        'route'    => 'migration migrate [<number>] [--percona] [--port=]',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'upgrade'
@@ -40,7 +40,7 @@ return array(
                 ),
                 'migration-execute' => array(
                     'options' => array(
-                        'route'    => 'migration execute <number> (--up|--down) [--percona]',
+                        'route'    => 'migration execute <number> (--up|--down) [--percona] [--port=]',
                         'defaults' => array(
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'execute'

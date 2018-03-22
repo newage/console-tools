@@ -10,7 +10,7 @@ use Zend\ModuleManager\Feature\ConfigProviderInterface;
 use Zend\ModuleManager\Feature\ConsoleUsageProviderInterface;
 
 /**
- * 
+ *
  * @author     V.Leontiev <vadim.leontiev@gmail.com>
  * @license    http://opensource.org/licenses/MIT MIT
  * @since      php 5.6 or higher
@@ -21,7 +21,7 @@ class Module implements
     ConfigProviderInterface,
     ConsoleUsageProviderInterface
 {
-    
+
     protected $config = null;
 
     public function onBootstrap(MvcEvent $e)
@@ -34,12 +34,12 @@ class Module implements
 
     /**
      * Create documentation for console usage that module
-     * 
+     *
      */
     public function getConsoleUsage(Console $console)
     {
         $docs = array();
-        
+
         if ($this->config['console-tools']['enable']['schema']) {
             $docs = array_merge($docs, array(
                 'Schema:',
@@ -47,14 +47,14 @@ class Module implements
                 array('<dump>'           , 'Name of sql file for apply from folder ./config/sql'),
             ));
         }
-        
+
         if ($this->config['console-tools']['enable']['migrations']) {
             $docs = array_merge($docs, array(
                 'Migrations:',
                 'migration create [<short_name>]'           => 'Create new migration on format "YmdHis" with short name if needed',
-                'migration migrate [<migration>] [--percona]' =>
+                'migration migrate [<migration>] [--percona] [--port=<port>]' =>
                     'Execute a migration to a specified version or the latest available version.',
-                'migration execute <migration> --up|--down [--percona]' =>
+                'migration execute <migration> --up|--down [--percona] [--port=<port>]' =>
                     'Execute a single migration version up or down manually.',
                 'migration last --show'                     => 'Show last applied migration number',
                 array('<migration>'                          , 'Number of migration'),
@@ -62,9 +62,10 @@ class Module implements
                 array('--down'                               , 'Execute action down of one migration'),
                 array('--show'                               , 'Show sql code for last migration'),
                 array('--percona'                            , 'Executing ALTER TABLE use percona tool'),
+                array('<port>'                              , 'Executing ALTER TABLE use percona tool on specific port'),
             ));
         }
-        
+
         if ($this->config['console-tools']['enable']['fixtures']) {
             $docs = array_merge($docs, array(
                 'Fixtures:',
@@ -72,7 +73,7 @@ class Module implements
                 array('<fixture>'            , 'Apply only there fixture'),
             ));
         }
-        
+
         return $docs;
     }
 
