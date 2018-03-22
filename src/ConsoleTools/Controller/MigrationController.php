@@ -41,6 +41,7 @@ class MigrationController extends AbstractActionController
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
         $percona = $request->getParam('percona');
+        $port = $request->getParam('port');
 
         $migrationPath = $this->getMigrationFolder();
         $filePath = $migrationPath . $migration . '.php';
@@ -55,9 +56,9 @@ class MigrationController extends AbstractActionController
             $migrationArray = $this->includeMigration($filePath);
 
             if ($request->getParam(self::UPGRADE_KEY)) {
-                $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona);
+                $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona, $port);
             } elseif ($request->getParam(self::DOWNGRADE_KEY)) {
-                $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona);
+                $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona, $port);
             }
         }
     }
@@ -70,13 +71,13 @@ class MigrationController extends AbstractActionController
      * @param array $migrationArray
      * @return bool
      */
-    protected function applyMigration($action, $migration, $migrationArray, $percona)
+    protected function applyMigration($action, $migration, $migrationArray, $percona, $port)
     {
         /* @var $adapter \Zend\Db\Adapter\Adapter */
         /* @var $console Console */
         $adapter    = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $console    = $this->getServiceLocator()->get('console');
-        $model      = new Migration($adapter, $this->getServiceLocator(), $percona);
+        $model      = new Migration($adapter, $this->getServiceLocator(), $percona, $port);
         $methodName = $action == self::UPGRADE_KEY ? 'upgrade' : 'downgrade';
 
         $console->writeLine();
@@ -185,7 +186,8 @@ EOD;
         $request             = $this->getRequest();
         $toMigration         = $request->getParam('number', 'all');
         $percona             = $request->getParam('percona');
-        $model               = new Migration($adapter, $this->getServiceLocator(), $percona);
+        $port                = $request->getParam('port');
+        $model               = new Migration($adapter, $this->getServiceLocator(), $percona, $port);
         $migrationsFromBase  = $model->applied();
         $migrationFolderPath = $this->getMigrationFolder();
         $files               = array();
@@ -231,11 +233,11 @@ EOD;
                 switch ($upgradeAction) {
                     case self::DOWNGRADE_KEY:
                         //downgrade action
-                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona);
+                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona, $port);
                         break;
                     case self::UPGRADE_KEY:
                         //upgrade action
-                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona);
+                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona, $port);
                         break;
                     default:
                         throw new \Exception('Not set action');

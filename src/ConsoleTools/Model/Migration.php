@@ -37,6 +37,11 @@ class Migration
     protected $percona = false;
 
     /**
+     * @var int
+     */
+    protected $port = false;
+
+    /**
      * Migration table name of database
      *
      * @var string
@@ -50,10 +55,11 @@ class Migration
      *
      * @param \Zend\Db\Adapter\Adapter $adapter
      */
-    public function __construct($adapter = null, ServiceLocatorInterface $serviceLocator, $percona)
+    public function __construct($adapter = null, ServiceLocatorInterface $serviceLocator, $percona, $port)
     {
         $this->adapter = $adapter;
         $this->percona = $percona;
+        $this->port = $port;
         $this->createTable();
         $this->setServiceLocator($serviceLocator);
     }
@@ -237,13 +243,14 @@ class Migration
         }
         $dbConfig = $config['db'];
 
-        $queries = explode(';' . PHP_EOL, $migration);
+        $queries = explode(';', $migration);
         foreach ($queries as $query) {
-            $query = trim($query);
+            $query = trim($query, " \t\n\r\0");
             if (!empty($query)) {
                 if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
                     if ($this->executeInPerconaTool($query, $dbConfig) === false) {
                         $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+
                         if ($request instanceof ResultSetInterface) {
                             $console->writeLine('Affected rows: ' . $request->count(), Color::BLUE);
                         }
@@ -255,26 +262,34 @@ class Migration
                 }
             }
         }
+
     }
 
     protected function executeInPerconaTool($query, $dbConfig): bool
     {
         if (stristr($query, 'ALTER TABLE') && $this->percona) {
             $cleanQuery = str_replace(['`', '\''], '', $query);
+
             preg_match('~ALTER TABLE\s([\w\d\_]+)\s(.*);?~smi', $cleanQuery, $matches);
             if (!isset($matches[1]) || !isset($matches[2])) {
                 return false;
             }
             $console = $this->getServiceLocator()->get('console');
 
+            $port = $dbConfig['port'];
+            if (!empty($this->port)) {
+                $port = $this->port;
+            }
+
             $perconaString = sprintf(
-                'pt-online-schema-change --execute --alter-foreign-keys-method=auto --password=%1$s --user=%2$s --alter "%6$s" D=%3$s,t=%5$s,h=%4$s',
+                'pt-online-schema-change --execute --alter-foreign-keys-method=auto --password=%1$s --user=%2$s --alter "%6$s" D=%3$s,t=%5$s,h=%4$s,P=%7$s',
                 $dbConfig['password'],
                 $dbConfig['username'],
                 $dbConfig['database'],
                 $dbConfig['hostname'],
                 $matches[1],
-                $matches[2]
+                $matches[2],
+                $port
             );
             $result = shell_exec($perconaString);
             $console->writeLine('Percona response:', Color::BLUE);
