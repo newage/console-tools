@@ -1,13 +1,15 @@
 <?php
 
-return array(
-    'console-tools' => array(
-        'enable' => array(
+return [
+    'console-tools' => [
+        'enable' => [
             'migrations' => true,
             'fixtures' => true,
             'schema' => true
-        ),
-        'migration_template' => 'Y:m:d-H:i:s',
-        'migration_folder' => 'build/migrations'
-    )
-);
+        ],
+        'migration_template' => 'Y-m-d_H-i-s',
+        'migration_folder' => 'build/migrations',
+        'fixture_template' => 'Y-m-d_H-i-s',
+        'fixture_folder' => 'build/fixtures',
+    ],
+];

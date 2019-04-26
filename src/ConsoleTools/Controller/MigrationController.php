@@ -15,7 +15,7 @@ use Zend\Console\Prompt\Char;
  *
  * @author     V.Leontiev <vadim.leontiev@gmail.com>
  * @license    http://opensource.org/licenses/MIT MIT
- * @since      php 5.6 or higher
+ * @since      php 7.1 or higher
  * @see        https://github.com/newage/console-tools
  */
 class MigrationController extends AbstractActionController
@@ -65,19 +65,21 @@ class MigrationController extends AbstractActionController
 
     /**
      * Show confirm for migration
-     *
      * @param string $action
      * @param string $migration
-     * @param array $migrationArray
+     * @param array  $migrationArray
+     * @param        $percona
+     * @param        $port
+     * @param bool   $silent
      * @return bool
      */
-    protected function applyMigration($action, $migration, $migrationArray, $percona, $port)
+    protected function applyMigration($action, $migration, $migrationArray, $percona, $port, $silent = false)
     {
         /* @var $adapter \Zend\Db\Adapter\Adapter */
         /* @var $console Console */
         $adapter    = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $console    = $this->getServiceLocator()->get('console');
-        $model      = new Migration($adapter, $this->getServiceLocator(), $percona, $port);
+        $model      = new Migration($adapter, $this->getServiceLocator(), $percona, $port, $silent);
         $methodName = $action == self::UPGRADE_KEY ? 'upgrade' : 'downgrade';
 
         $console->writeLine();
@@ -92,7 +94,9 @@ class MigrationController extends AbstractActionController
         } elseif (!empty($exist) && !empty($exist['ignored'])) {
             $console->writeLine('This migration was already pseudo-executed (ignored)', Color::LIGHT_CYAN);
         }
-        $answer = Char::prompt('Apply this migration (Yes / no / ignore forever)? [y/n/i]', 'yni');
+
+        $answer = !$silent ? Char::prompt('Apply this migration (Yes / no / ignore forever)? [y/n/i]', 'yni') : 'y';
+
         switch ($answer) {
             case 'y':
                 if ($action == self::UPGRADE_KEY) {
@@ -134,7 +138,7 @@ class MigrationController extends AbstractActionController
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
         $request = $this->getRequest();
-        $short_name = $request->getParam('short_name', '');
+        $shortName = $request->getParam('short_name', '');
 
         $config = $this->getServiceLocator()->get('Config');
         if (isset($config['console-tools']['migration_template'])) {
@@ -149,11 +153,11 @@ class MigrationController extends AbstractActionController
         }
 
         $date = new \DateTime();
-        if ($short_name) {
-            $short_name = '_' . $short_name;
+        if ($shortName) {
+            $shortName = '_' . $shortName;
         }
 
-        $migrationName = $date->format($dateTemplate) . $short_name . '.php';
+        $migrationName = $date->format($dateTemplate) . $shortName . '.php';
 
         $migrationContent = <<<EOD
 <?php
@@ -177,23 +181,28 @@ EOD;
      */
     public function upgradeAction()
     {
-        $console = $this->getServiceLocator()->get('console');
+        /* @var $sm \Zend\ServiceManager\ServiceManager */
+        $sm = $this->getServiceLocator();
+
+        $console = $sm->get('console');
         if (!$console instanceof Console) {
             throw new RuntimeException('Cannot obtain console adapter. Are we running in a console?');
         }
 
-        $adapter             = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $adapter             = $sm->get('Zend\Db\Adapter\Adapter');
         $request             = $this->getRequest();
         $toMigration         = $request->getParam('number', 'all');
         $percona             = $request->getParam('percona');
         $port                = $request->getParam('port');
-        $model               = new Migration($adapter, $this->getServiceLocator(), $percona, $port);
+        $silent              = $request->getParam('silent');
+        $model               = new Migration($adapter, $sm, $percona, $port, $silent);
         $migrationsFromBase  = $model->applied();
         $migrationFolderPath = $this->getMigrationFolder();
-        $files               = array();
+        $files               = [];
 
-        if (!$this->isApplySchema($console, $adapter)) {
-            false;
+        if (!$silent && !$this->isApplySchema($console, $adapter)) {
+            $console->writeLine('Migration process has been brake', Color::RED);
+            return false;
         }
 
         if ($toMigration == 'all') {
@@ -233,11 +242,11 @@ EOD;
                 switch ($upgradeAction) {
                     case self::DOWNGRADE_KEY:
                         //downgrade action
-                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona, $port);
+                        $this->applyMigration(self::DOWNGRADE_KEY, $migration, $migrationArray, $percona, $port, $silent);
                         break;
                     case self::UPGRADE_KEY:
                         //upgrade action
-                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona, $port);
+                        $this->applyMigration(self::UPGRADE_KEY, $migration, $migrationArray, $percona, $port, $silent);
                         break;
                     default:
                         throw new \Exception('Not set action');

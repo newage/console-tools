@@ -1,71 +1,80 @@
 <?php
 
-return array(
-    'controllers' => array(
-        'invokables' => array(
+return [
+    'controllers' => [
+        'invokables' => [
             'ConsoleTools\Controller\Migration' => 'ConsoleTools\Controller\MigrationController',
             'ConsoleTools\Controller\Schema' => 'ConsoleTools\Controller\SchemaController',
             'ConsoleTools\Controller\Fixture' => 'ConsoleTools\Controller\FixtureController',
-        ),
-    ),
-    'console' => array(
-        'router' => array(
-            'routes' => array(
-                'schema-clean' => array(
-                    'options' => array(
+        ],
+    ],
+    'console' => [
+        'router' => [
+            'routes' => [
+                'schema-clean' => [
+                    'options' => [
                         'route'    => 'schema clean [<file>]',
-                        'defaults' => array(
+                        'defaults' => [
                             'controller' => 'ConsoleTools\Controller\Schema',
                             'action'     => 'clean'
-                        )
-                    )
-                ),
-                'migration-create' => array(
-                    'options' => array(
+                        ]
+                    ]
+                ],
+                'migration-create' => [
+                    'options' => [
                         'route'    => 'migration create [<short_name>]',
-                        'defaults' => array(
+                        'defaults' => [
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'create'
-                        )
-                    )
-                ),
-                'migration-upgrade' => array(
-                    'options' => array(
-                        'route'    => 'migration migrate [<number>] [--percona] [--port=]',
-                        'defaults' => array(
+                        ]
+                    ]
+                ],
+                'migration-upgrade' => [
+                    'options' => [
+                        'route'    => 'migration migrate [<number>] [--silent] [--percona] [--port=]',
+                        'defaults' => [
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'upgrade'
-                        )
-                    )
-                ),
-                'migration-execute' => array(
-                    'options' => array(
+                        ]
+                    ]
+                ],
+                'migration-execute' => [
+                    'options' => [
                         'route'    => 'migration execute <number> (--up|--down) [--percona] [--port=]',
-                        'defaults' => array(
+                        'defaults' => [
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'execute'
-                        )
-                    )
-                ),
-                'migration-last' => array(
-                    'options' => array(
+                        ]
+                    ]
+                ],
+                'migration-last' => [
+                    'options' => [
                         'route'    => 'migration last',
-                        'defaults' => array(
+                        'defaults' => [
                             'controller' => 'ConsoleTools\Controller\Migration',
                             'action'     => 'last'
-                        )
-                    )
-                ),
-                'fixture-apply' => array(
-                    'options' => array(
-                        'route'    => 'fixture apply [<name>]',
-                        'defaults' => array(
+                        ]
+                    ]
+                ],
+                'fixture-create' => [
+                    'options' => [
+                        'route'    => 'fixture create [<short_name>]',
+                        'defaults' => [
+                            'controller' => 'ConsoleTools\Controller\Fixture',
+                            'action'     => 'create'
+                        ]
+                    ]
+                ],
+                'fixture-apply' => [
+                    'options' => [
+                        'route'    => 'fixture apply [<name>] [--up|--down] [--silent]',
+                        'defaults' => [
                             'controller' => 'ConsoleTools\Controller\Fixture',
                             'action'     => 'apply'
-                        )
-                    )
-                )
-            ),
-        ),
-    ),
-);
+                        ]
+                    ]
+                ]
+            ],
+        ],
+    ],
+];

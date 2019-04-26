@@ -8,6 +8,8 @@ return array(
             'schema' => true
         ),
         'migration_template' => 'Y:m:d-H:i:s',
-        'migration_folder' => 'data/migrations'
+        'migration_folder' => 'data/migrations',
+        'fixture_template' => 'Y:m:d-H:i:s',
+        'fixture_folder' => 'build/fixtures',
     )
 );

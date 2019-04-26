@@ -1,0 +1,32 @@
+<?php
+
+$dbParams = [
+    'driver' => 'Pdo_Mysql',
+    'database'  => 'etalon',
+    'username'  => 'ed2_master',
+    'password'  => 'ed2_master3',
+    'hostname'  => '192.168.0.20',
+    'port'      => '3306',
+];
+
+return [
+    'db' => $dbParams,
+    'service_manager' => [
+        'factories' => [
+            'Zend\Db\Adapter\Adapter' => function ($sm) use ($dbParams) {
+                $adapter = new Zend\Db\Adapter\Adapter([
+                    'driver' => 'Pdo_Mysql',
+                    'database' => $dbParams['database'],
+                    'username' => $dbParams['username'],
+                    'password' => $dbParams['password'],
+                    'hostname' => $dbParams['hostname'],
+                    'port' => $dbParams['port'],
+                    'driver_options' => array(
+                        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\''
+                    ),
+                ]);
+                return $adapter;
+            }
+        ]
+    ]
+];
