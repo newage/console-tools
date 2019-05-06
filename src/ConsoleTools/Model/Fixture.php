@@ -4,9 +4,11 @@ namespace ConsoleTools\Model;
 
 use Zend\Console\Prompt\Confirm;
 use Zend\Db\Adapter\Adapter;
+use Zend\Db\Metadata\Metadata;
 use Zend\Db\ResultSet\ResultSetInterface;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Ddl;
+use Zend\Db\TableGateway\Feature\GlobalAdapterFeature;
 use Zend\ServiceManager\ServiceLocatorAwareTrait;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\Console\ColorInterface as Color;
@@ -73,14 +75,14 @@ class Fixture
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         } catch (\Exception $err) {
             $table = new Ddl\CreateTable(self::TABLE);
-            $table->addColumn(new Ddl\Column\Integer('id'));
+            $table->addColumn((new Ddl\Column\Integer('id', false))->setOption('autoincrement', true));
             $table->addColumn(new Ddl\Column\Char('fixture', 255));
-            $table->addColumn(new Ddl\Column\Text('up'));
-            $table->addColumn(new Ddl\Column\Text('down'));
-            $table->addColumn(new Ddl\Column\Integer('ignore', false, 0, ['length' => 1]));
+            $table->addColumn(new Ddl\Column\Text('up', null, true));
+            $table->addColumn(new Ddl\Column\Text('down', null, true));
+            $table->addColumn(new Ddl\Column\Integer('ignore', false, 0));
 
             $table->addConstraint(new Ddl\Constraint\PrimaryKey('id'));
-            $table->addConstraint(new Ddl\Constraint\UniqueKey(['fixture'], 'unique_key'));
+            $table->addConstraint(new Ddl\Constraint\UniqueKey('fixture', 'unique_key'));
 
             $queryString = $sql->buildSqlString($table);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
@@ -127,20 +129,29 @@ class Fixture
      */
     public function upgrade($fixtureName, array $fixtureArray, $ignoreFixture = false, $doNotSaveAsExecuted = false)
     {
-        if (!$ignoreFixture) {
-            $this->executeQueriesOneByOne($fixtureArray['up']);
-        }
-        if (!$doNotSaveAsExecuted) {
-            $sql = new Sql($this->adapter);
-            $insert = $sql->insert(self::TABLE);
-            $insert->values(array(
-                'fixture' => $fixtureName,
-                'up' => $fixtureArray['up'],
-                'down' => $fixtureArray['down'],
-                'ignore' => (int)$ignoreFixture,
-            ));
-            $queryString = $sql->buildSqlString($insert);
-            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+
+        try {
+            if (!$ignoreFixture) {
+                $this->executeQueriesOneByOne($fixtureArray['up']);
+            }
+            if (!$doNotSaveAsExecuted) {
+                $sql = new Sql($this->adapter);
+                $insert = $sql->insert(self::TABLE);
+                $insert->values(array(
+                    'fixture' => $fixtureName,
+                    'up' => $fixtureArray['up'],
+                    'down' => $fixtureArray['down'],
+                    'ignore' => (int)$ignoreFixture,
+                ));
+                $queryString = $sql->buildSqlString($insert);
+                $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+            }
+            $connection->commit();
+        } catch (\Exception $err) {
+            $connection->rollback();
+            throw new \Exception($err->getMessage());
         }
     }
 
@@ -154,16 +165,26 @@ class Fixture
      */
     public function downgrade($fixtureName, array $fixtureArray, $ignore = false)
     {
-        if (!$ignore) {
-            $this->executeQueriesOneByOne($fixtureArray['down']);
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+
+        try {
+            if (!$ignore) {
+                $this->executeQueriesOneByOne($fixtureArray['down']);
+            }
+
+            $sql = new Sql($this->adapter);
+            $delete = $sql->delete(self::TABLE);
+            $delete->where(array('fixture' => $fixtureName));
+
+            $queryString = $sql->buildSqlString($delete);
+            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
+
+            $connection->commit();
+        } catch (\Exception $err) {
+            $connection->rollback();
+            throw new \Exception($err->getMessage());
         }
-
-        $sql = new Sql($this->adapter);
-        $delete = $sql->delete(self::TABLE);
-        $delete->where(array('fixture' => $fixtureName));
-
-        $queryString = $sql->buildSqlString($delete);
-        $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
     }
 
     /**
@@ -176,6 +197,10 @@ class Fixture
         $queries = explode(';', $fixture);
         foreach ($queries as $query) {
             $query = trim($query, " \t\n\r\0");
+            if (empty($query)) {
+                continue;
+            }
+
             $result = (!$this->silent) ? Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n') : true;
             if (!empty($query) && $result) {
                 $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
@@ -204,7 +229,7 @@ class Fixture
 
         if ($results->count() > 0) {
             foreach ($results as $fixture) {
-                $fixtureFiles[] = $fixture->migration;
+                $fixtureFiles[] = $fixture->fixture;
             }
         }
 

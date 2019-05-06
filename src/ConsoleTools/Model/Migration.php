@@ -88,14 +88,14 @@ class Migration
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         } catch (\Exception $err) {
             $table = new Ddl\CreateTable(self::TABLE);
-            $table->addColumn(new Ddl\Column\Integer('id'));
+            $table->addColumn((new Ddl\Column\Integer('id', false))->setOption('autoincrement', true));
             $table->addColumn(new Ddl\Column\Char('migration', 255));
-            $table->addColumn(new Ddl\Column\Text('up'));
-            $table->addColumn(new Ddl\Column\Text('down'));
-            $table->addColumn(new Ddl\Column\Integer('ignore', false, 0, ['length' => 1]));
+            $table->addColumn(new Ddl\Column\Text('up', null, true));
+            $table->addColumn(new Ddl\Column\Text('down', null, true));
+            $table->addColumn(new Ddl\Column\Integer('ignore', false, 0));
 
             $table->addConstraint(new Ddl\Constraint\PrimaryKey('id'));
-            $table->addConstraint(new Ddl\Constraint\UniqueKey(['migration'], 'unique_key'));
+            $table->addConstraint(new Ddl\Constraint\UniqueKey('migration', 'unique_key'));
 
             $queryString = $sql->buildSqlString($table);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
