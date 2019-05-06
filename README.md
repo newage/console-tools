@@ -39,7 +39,7 @@ $> cp ./vendor/newage/console-tools/config/console-tools.local.php.dist ./config
 
 Start console tools
 ```
-$> php ./public/index.php
+$> php ./zf.php migration migrate
 ```
 
 ##Bash Completion

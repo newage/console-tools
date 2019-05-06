@@ -17,7 +17,7 @@ use Zend\Console\ColorInterface as Color;
  *
  * @author     V.Leontiev <vadim.leontiev@gmail.com>
  * @license    http://opensource.org/licenses/MIT MIT
- * @since      php 5.6 or higher
+ * @since      php 7.1 or higher
  * @see        https://github.com/newage/console-tools
  */
 class Migration
@@ -42,6 +42,11 @@ class Migration
     protected $port = false;
 
     /**
+     * @var bool
+     */
+    protected $silent;
+
+    /**
      * Migration table name of database
      *
      * @var string
@@ -52,16 +57,20 @@ class Migration
      * Constructor
      * Create migration table
      * Set current db adapter
-     *
      * @param \Zend\Db\Adapter\Adapter $adapter
+     * @param ServiceLocatorInterface  $serviceLocator
+     * @param                          $percona
+     * @param                          $port
+     * @param                          $silent
      */
-    public function __construct($adapter = null, ServiceLocatorInterface $serviceLocator, $percona, $port)
+    public function __construct($adapter = null, ServiceLocatorInterface $serviceLocator, $percona = false, $port = null, $silent = false)
     {
         $this->adapter = $adapter;
         $this->percona = $percona;
         $this->port = $port;
         $this->createTable();
         $this->setServiceLocator($serviceLocator);
+        $this->silent = $silent;
     }
 
     /**
@@ -75,20 +84,20 @@ class Migration
 
         try {
             $select = $sql->select(self::TABLE);
-            $queryString = $sql->getSqlStringForSqlObject($select);
+            $queryString = $sql->buildSqlString($select);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         } catch (\Exception $err) {
             $table = new Ddl\CreateTable(self::TABLE);
-            $table->addColumn(new Ddl\Column\Integer('id'));
+            $table->addColumn((new Ddl\Column\Integer('id', false))->setOption('autoincrement', true));
             $table->addColumn(new Ddl\Column\Char('migration', 255));
-            $table->addColumn(new Ddl\Column\Text('up'));
-            $table->addColumn(new Ddl\Column\Text('down'));
-            $table->addColumn(new Ddl\Column\Integer('ignored', false, 0, array('length' => 1)));
+            $table->addColumn(new Ddl\Column\Text('up', null, true));
+            $table->addColumn(new Ddl\Column\Text('down', null, true));
+            $table->addColumn(new Ddl\Column\Integer('ignore', false, 0));
 
             $table->addConstraint(new Ddl\Constraint\PrimaryKey('id'));
-            $table->addConstraint(new Ddl\Constraint\UniqueKey(['migration'], 'unique_key'));
+            $table->addConstraint(new Ddl\Constraint\UniqueKey('migration', 'unique_key'));
 
-            $queryString = $sql->getSqlStringForSqlObject($table);
+            $queryString = $sql->buildSqlString($table);
             $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         }
     }
@@ -106,10 +115,10 @@ class Migration
             'last' => new Expression('MAX(id)'),
             'up',
             'down',
-            'ignored'
+            'ignore'
         ));
 
-        $selectString = $sql->getSqlStringForSqlObject($select);
+        $selectString = $sql->buildSqlString($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
         return $results->current();
@@ -127,7 +136,7 @@ class Migration
         $select->columns(array('*'));
         $select->where($where);
 
-        $selectString = $sql->getSqlStringForSqlObject($select);
+        $selectString = $sql->buildSqlString($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
         return $results->current();
@@ -145,7 +154,7 @@ class Migration
         $select = $sql->select();
         $select->from(self::TABLE);
 
-        $selectString = $sql->getSqlStringForSqlObject($select);
+        $selectString = $sql->buildSqlString($select);
         $results = $this->adapter->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
         if ($results->count() > 0) {
@@ -170,30 +179,20 @@ class Migration
      */
     public function upgrade($migrationName, array $migrationArray, $ignoreMigration = false, $doNotSaveAsExecuted = false)
     {
-        $connection = $this->adapter->getDriver()->getConnection();
-        $connection->beginTransaction();
-
-        try {
-            if (!$ignoreMigration) {
-                $this->executeQueriesOneByOne($migrationArray['up']);
-            }
-            if (!$doNotSaveAsExecuted) {
-                $sql = new Sql($this->adapter);
-                $insert = $sql->insert(self::TABLE);
-                $insert->values(array(
-                    'migration' => $migrationName,
-                    'up' => $migrationArray['up'],
-                    'down' => $migrationArray['down'],
-                    'ignore' => (int)$ignoreMigration,
-                ));
-                $queryString = $sql->getSqlStringForSqlObject($insert);
-                $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
-            }
-
-            $connection->commit();
-        } catch (\Exception $exception) {
-            $connection->rollback();
-            throw new \Exception($exception->getMessage());
+        if (!$ignoreMigration) {
+            $this->executeQueriesOneByOne($migrationArray['up']);
+        }
+        if (!$doNotSaveAsExecuted) {
+            $sql = new Sql($this->adapter);
+            $insert = $sql->insert(self::TABLE);
+            $insert->values(array(
+                'migration' => $migrationName,
+                'up' => $migrationArray['up'],
+                'down' => $migrationArray['down'],
+                'ignore' => (int)$ignoreMigration,
+            ));
+            $queryString = $sql->buildSqlString($insert);
+            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
         }
     }
 
@@ -208,27 +207,16 @@ class Migration
      */
     public function downgrade($migrationName, array $migrationArray, $ignore = false)
     {
-        $connection = $this->adapter->getDriver()->getConnection();
-
-        try {
-            $connection->beginTransaction();
-
-            if (!$ignore) {
-                $this->executeQueriesOneByOne($migrationArray['down']);
-            }
-
-            $sql = new Sql($this->adapter);
-            $delete = $sql->delete(self::TABLE);
-            $delete->where(array('migration' => $migrationName));
-
-            $queryString = $sql->getSqlStringForSqlObject($delete);
-            $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
-
-            $connection->commit();
-        } catch(\Exception $exception) {
-            $connection->rollback();
-            throw new \Exception($exception->getMessage());
+        if (!$ignore) {
+            $this->executeQueriesOneByOne($migrationArray['down']);
         }
+
+        $sql = new Sql($this->adapter);
+        $delete = $sql->delete(self::TABLE);
+        $delete->where(array('migration' => $migrationName));
+
+        $queryString = $sql->buildSqlString($delete);
+        $this->adapter->query($queryString, Adapter::QUERY_MODE_EXECUTE);
     }
 
     /**
@@ -239,30 +227,26 @@ class Migration
         $console = $this->getServiceLocator()->get('console');
         $config = $this->getServiceLocator()->get('config');
         if (!isset($config['db'])) {
-            throw new \RuntimeException('Does nto exist `db` config!');
+            throw new \RuntimeException('Does not exist `db` config!');
         }
         $dbConfig = $config['db'];
 
         $queries = explode(';', $migration);
         foreach ($queries as $query) {
             $query = trim($query, " \t\n\r\0");
-            if (!empty($query)) {
-                if (Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n')) {
-                    if ($this->executeInPerconaTool($query, $dbConfig) === false) {
-                        $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
+            $result = (!$this->silent) ? Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n') : true;
+            if (!empty($query) && $result) {
+                if (!$this->percona) {
+                    $request = $this->adapter->query($query, Adapter::QUERY_MODE_EXECUTE);
 
-                        if ($request instanceof ResultSetInterface) {
-                            $console->writeLine('Affected rows: ' . $request->count(), Color::BLUE);
-                        }
+                    if ($request instanceof ResultSetInterface) {
+                        $console->writeLine('Affected rows: ' . $request->count(), Color::BLUE);
                     }
-                } elseif (Confirm::prompt('Break execution and ROLLBACK? [y/n]', 'y', 'n')) {
-                    $connection = $this->adapter->getDriver()->getConnection();
-                    $connection->rollback();
-                    exit;
+                } else {
+                    $this->executeInPerconaTool($query, $dbConfig);
                 }
             }
         }
-
     }
 
     protected function executeInPerconaTool($query, $dbConfig): bool

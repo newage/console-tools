@@ -16,20 +16,20 @@ if (file_exists("$basePath/vendor/autoload.php")) {
     exit(2);
 }
 
-$appConfig = array(
-    'modules' => array(
+$appConfig = [
+    'modules' => [
         'ConsoleTools',
-    ),
-    'module_listener_options' => array(
-        'config_glob_paths'    => array(
+    ],
+    'module_listener_options' => [
+        'config_glob_paths'    => [
           'config/autoload/{,*.}{global,local}.php',
-        ),
-        'module_paths' => array(
+        ],
+        'module_paths' => [
             './',
             './vendor'
-        )
-    )
-);
+        ]
+    ]
+];
 
 
 Zend\Mvc\Application::init($appConfig)->run();

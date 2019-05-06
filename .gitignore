@@ -2,3 +2,5 @@ vendor
 composer.phar
 composer.lock
 .idea
+.env
+config/autoload/db.local.php
