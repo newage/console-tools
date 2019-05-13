@@ -38,6 +38,7 @@ class MigrationController extends AbstractActionController
     {
         /* @var $console Console */
         $adapter   = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $adapter->getDriver()->getConnection()->connect();
         $console   = $this->getServiceLocator()->get('console');
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
