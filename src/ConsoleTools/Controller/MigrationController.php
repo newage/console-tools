@@ -37,6 +37,7 @@ class MigrationController extends AbstractActionController
     public function executeAction()
     {
         /* @var $console Console */
+        $adapter   = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
         $console   = $this->getServiceLocator()->get('console');
         $request   = $this->getRequest();
         $migration = $request->getParam('number');
@@ -49,7 +50,7 @@ class MigrationController extends AbstractActionController
         if (!file_exists($filePath)) {
             $console->writeLine('Migration does not exists: ' . $filePath, Color::RED);
         } else {
-            if (!$this->isApplySchema($console)) {
+            if (!$this->isApplySchema($console, $adapter)) {
                 false;
             }
 
