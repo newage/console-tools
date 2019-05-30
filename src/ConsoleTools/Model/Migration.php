@@ -234,6 +234,10 @@ class Migration
         $queries = explode(';', $migration);
         foreach ($queries as $query) {
             $query = trim($query, " \t\n\r\0");
+            if (empty($query)) {
+                continue;
+            }
+
             $result = (!$this->silent) ? Confirm::prompt($query . PHP_EOL . 'Run this query? [y/n]', 'y', 'n') : true;
             if (!empty($query) && $result) {
                 if (!$this->percona) {
