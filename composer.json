@@ -15,8 +15,7 @@
     "homepage": "https://github.com/newage/console-tools.git",
     "license": "MIT",
     "require":{
-        "php":"^7.1|^8.0",
-        "zendframework/zendframework": ">=2.4.0"
+        "php":"^7.1|^8.0"
     },
     "require-dev":{
         "phpunit/phpunit": "3.7.*",
